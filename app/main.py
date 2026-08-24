@@ -1,7 +1,7 @@
 """
 ChipFlow FastAPI Main Application.
-Provides REST and Server-Sent Events (SSE) APIs for BOM parsing, Ego-style price checking,
-Vector alternative recommendation, European cross-border sourcing, and AI Chat.
+Provides REST, File Upload, SSE APIs for BOM parsing, Ego pricing agent,
+Vector substitute recommendation, European cross-border sourcing, and AI Chat.
 Compatible with local execution and Vercel Serverless runtime.
 """
 
@@ -16,7 +16,7 @@ import openpyxl
 from app.config import settings
 from app.data.sample_boms import SAMPLE_BOMS
 from app.data.european_inventory import EUROPEAN_DEADSTOCK_INVENTORY
-from app.services.bom_parser import parse_excel_bom, parse_text_bom
+from app.services.bom_parser import universal_bom_parser, parse_text_bom
 from app.services.pricing_agent import stream_price_lookup, get_cached_price, LIVE_PRICE_CACHE
 from app.services.vector_matcher import find_vector_substitutes
 from app.services.crossborder_sourcing import generate_trilingual_inquiry_email, check_european_deadstock
@@ -87,6 +87,7 @@ async def get_single_sample_bom(bom_id: str):
         "bom_id": bom["id"],
         "name": bom["name"],
         "description": bom["description"],
+        "format": "Preloaded Benchmark BOM",
         "items": enriched_items
     }
 
@@ -97,18 +98,19 @@ async def upload_bom(
 ):
     if file and file.filename:
         content = await file.read()
-        items = parse_excel_bom(content)
+        items, meta = universal_bom_parser(content, file.filename)
     elif raw_text:
         items = parse_text_bom(raw_text)
+        meta = {"filename": "Clipboard / Text Paste", "format": "Text Stream", "ocr_used": False, "confidence": 0.99, "line_count": len(items)}
     else:
-        raise HTTPException(status_code=400, detail="请上传 Excel 文件或输入 BOM 文本")
+        raise HTTPException(status_code=400, detail="请上传 Excel、PDF、图片文件或输入 BOM 文本")
         
     enriched_items = []
     for it in items:
         mpn = it["mpn"]
         price_info = get_cached_price(mpn)
         eu_info = check_european_deadstock(mpn)
-        compliance = check_export_compliance(mpn, it["manufacturer"], it["category"])
+        compliance = check_export_compliance(mpn, it.get("manufacturer", "待识别"), it.get("category", "通用元器件"))
         
         enriched_items.append({
             **it,
@@ -120,7 +122,10 @@ async def upload_bom(
         
     return {
         "success": True,
-        "filename": file.filename if file else "Custom Text BOM",
+        "filename": meta["filename"],
+        "format": meta["format"],
+        "ocr_used": meta.get("ocr_used", False),
+        "confidence": meta.get("confidence", 0.99),
         "items": enriched_items
     }
 
@@ -171,11 +176,10 @@ async def export_quote_excel(payload: dict):
     ]
     ws.append(headers)
     
-    # Header styling
     for col_num in range(1, len(headers) + 1):
         cell = ws.cell(row=1, column=col_num)
         cell.font = openpyxl.styles.Font(bold=True, color="FFFFFF")
-        cell.fill = openpyxl.styles.PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+        cell.fill = openpyxl.styles.PatternFill(start_color="4F46E5", end_color="4F46E5", fill_type="solid")
         
     for it in items:
         quote = it.get("quote", {}).get("best_spot", {})

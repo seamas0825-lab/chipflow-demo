@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ app_name }} - 智能工作台</title>
+    <title>{{ app_name }} - AI-Native 跨境元器件智能采购与决策引擎</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -13,20 +13,22 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#F5F7FF',
-                            100: '#EBF0FE',
-                            500: '#4F46E5',
-                            600: '#4338CA',
-                            700: '#3730A3'
+                            50: '#EEF2FF',
+                            100: '#E0E7FF',
+                            500: '#6366F1',
+                            600: '#4F46E5',
+                            700: '#4338CA',
                         },
-                        nordic: {
-                            50: '#F0F9FF',
-                            500: '#0EA5E9',
-                            600: '#0284C7'
+                        surface: {
+                            50: '#F8FAFC',
+                            100: '#F1F5F9',
+                            200: '#E2E8F0',
                         }
                     },
-                    fontFamily: {
-                        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+                    boxShadow: {
+                        'subtle': '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+                        'float': '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)'
                     }
                 }
             }
@@ -41,59 +43,72 @@
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
-        .chat-bubble { animation: fadeIn 0.25s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        .chat-bubble { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-[#F8FAFC] text-slate-800 min-h-screen flex flex-col font-sans antialiased custom-scrollbar">
+<body class="bg-[#F8FAFC] text-slate-800 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900 custom-scrollbar">
 
-    <!-- Top Clean Navigation Bar (YouMind Style) -->
-    <header class="border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between shadow-xs">
-        <div class="flex items-center space-x-3.5">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 flex items-center justify-center shadow-sm shadow-indigo-200 text-white">
+    <!-- Top AI-Native Navbar (Linear / YouMind Aesthetic) -->
+    <header class="border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-xs">
+        <div class="flex items-center space-x-4">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
                 <i data-lucide="cpu" class="w-5 h-5"></i>
             </div>
             <div>
-                <div class="flex items-center space-x-2">
-                    <h1 class="text-lg font-bold tracking-tight text-slate-900">
-                        ChipFlow
-                    </h1>
-                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200/60">
-                        BOM 智能工作台
+                <div class="flex items-center space-x-2.5">
+                    <span class="text-base font-bold tracking-tight text-slate-900">ChipFlow</span>
+                    <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200/60 font-mono">
+                        AI BOM Studio
                     </span>
-                    <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 hidden md:inline-flex items-center">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1 animate-pulse"></span>
-                        🇸🇪 斯德哥尔摩 ↔ 🇨🇳 深圳 现货管网
+                    <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 hidden md:inline-flex items-center">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                        🇸🇪 斯德哥尔摩 ↔ 🇨🇳 深圳 直联现货管网
                     </span>
                 </div>
-                <p class="text-xs text-slate-500">AI Agent 驱动的跨境电子元器件采购、参数级向量替代与智能决策助手</p>
             </div>
         </div>
 
-        <!-- Top Right Actions -->
-        <div class="flex items-center space-x-3">
-            <button id="btn-toggle-chat" class="flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-indigo-200/80 transition shadow-xs">
-                <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-                <span>BOM AI 助理</span>
-                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+        <!-- Global Search / Command Bar Trigger (⌘K) -->
+        <div class="hidden lg:flex items-center">
+            <button id="btn-cmd-palette" class="flex items-center space-x-2 bg-slate-100/80 hover:bg-slate-200/80 text-slate-500 px-3.5 py-1.5 rounded-xl text-xs border border-slate-200/60 transition w-64 justify-between shadow-2xs">
+                <div class="flex items-center space-x-1.5">
+                    <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>快速搜索物料或询问 AI...</span>
+                </div>
+                <kbd class="px-1.5 py-0.5 text-[10px] bg-white border border-slate-200 rounded text-slate-400 font-mono font-bold">⌘K</kbd>
+            </button>
+        </div>
+
+        <!-- Top Right Quick Actions -->
+        <div class="flex items-center space-x-2.5">
+            <button id="btn-open-universal-upload" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3.5 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 transition shadow-xs shadow-indigo-200">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                <span>导入 BOM (Excel/PDF/图片)</span>
             </button>
 
-            <button id="btn-export-excel" class="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-medium border border-slate-200 transition shadow-xs">
+            <button id="btn-toggle-chat" class="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 transition shadow-xs">
+                <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
+                <span>BOM AI 助理</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+            </button>
+
+            <button id="btn-export-excel" class="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium border border-slate-200 transition shadow-xs" title="导出报价 Excel">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
-                <span>导出报价单 (Excel)</span>
+                <span class="hidden sm:inline">导出报价表</span>
             </button>
         </div>
     </header>
 
-    <!-- Main Workspace -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-5">
 
-        <!-- Top Scenario Selector & Upload Ribbon -->
-        <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Active BOM Ribbon & Multi-Format Ingestion Notification -->
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-2">
-                <span class="text-xs font-semibold text-slate-500">切换 BOM 场景：</span>
+                <span class="text-xs font-semibold text-slate-500">BOM 场景：</span>
                 <button class="btn-sample-bom active bg-indigo-600 text-white shadow-xs px-3.5 py-1.5 rounded-xl text-xs font-medium transition" data-id="automotive_ecu">
                     🚗 车规级车身域控制器 (NXP/TI/ADI)
                 </button>
@@ -102,34 +117,37 @@
                 </button>
             </div>
 
-            <div class="flex items-center space-x-2.5">
-                <button id="btn-open-upload" class="bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-medium border border-slate-200 flex items-center space-x-1.5 transition shadow-xs">
-                    <i data-lucide="upload-cloud" class="w-4 h-4 text-indigo-600"></i>
-                    <span>上传自定义 BOM</span>
-                </button>
-                <button id="btn-run-all-agents" class="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-4 py-1.5 rounded-xl text-xs flex items-center space-x-2 shadow-sm shadow-indigo-200 transition transform active:scale-95">
-                    <i data-lucide="play" class="w-3.5 h-3.5 fill-white"></i>
-                    <span>一键启动 Ego 浏览器查价 Agent</span>
+            <!-- Active Document Parsing Metadata Pill -->
+            <div class="flex items-center space-x-3 text-xs">
+                <div id="file-meta-pill" class="flex items-center space-x-2 px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-slate-600">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-indigo-500"></i>
+                    <span id="meta-filename" class="font-medium">车规域控标准 Benchmark BOM</span>
+                    <span id="meta-format-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-mono">Excel/Structured</span>
+                    <span id="meta-ocr-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-mono hidden">OCR 99.2%</span>
+                </div>
+                <button id="btn-run-all-agents" class="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold px-3.5 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-sm shadow-indigo-200 transition">
+                    <i data-lucide="play" class="w-3 h-3 fill-white"></i>
+                    <span>Ego 全量查价</span>
                 </button>
             </div>
         </div>
 
-        <!-- Metric KPI Cards (YouMind Style) -->
+        <!-- Metric KPI Cards (Clean Modern SaaS Grid) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-xs hover:border-indigo-300 transition group">
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-subtle hover:border-indigo-300 transition group">
                 <div class="flex items-center justify-between">
-                    <div class="text-xs font-medium text-slate-500">BOM 物料总行数</div>
+                    <div class="text-xs font-medium text-slate-500">BOM 物料清单行数</div>
                     <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                         <i data-lucide="layers" class="w-4 h-4"></i>
                     </div>
                 </div>
                 <div id="stat-total-lines" class="text-2xl font-black text-slate-900 mt-2">6 行</div>
-                <div class="text-[11px] text-emerald-600 flex items-center mt-1.5 font-medium">
-                    <i data-lucide="check-circle-2" class="w-3 h-3 mr-1"></i> 已 100% 结构化清洗对齐
+                <div class="text-[11px] text-emerald-600 flex items-center mt-1 font-medium">
+                    <i data-lucide="check-circle-2" class="w-3 h-3 mr-1"></i> 多格式多模态解析 100%
                 </div>
             </div>
 
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-xs hover:border-amber-300 transition group">
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-subtle hover:border-amber-300 transition group">
                 <div class="flex items-center justify-between">
                     <div class="text-xs font-medium text-slate-500">欧洲 EMS 呆滞料套利</div>
                     <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -137,12 +155,12 @@
                     </div>
                 </div>
                 <div id="stat-eu-matched" class="text-2xl font-black text-amber-600 mt-2">2 款</div>
-                <div class="text-[11px] text-amber-700 flex items-center mt-1.5 font-medium">
-                    <i data-lucide="sparkles" class="w-3 h-3 mr-1"></i> 平均套利差价 39.6%
+                <div class="text-[11px] text-amber-700 flex items-center mt-1 font-medium">
+                    <i data-lucide="sparkles" class="w-3 h-3 mr-1"></i> 预计节省 ¥ 18,400+ (-39.6%)
                 </div>
             </div>
 
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-xs hover:border-purple-300 transition group">
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-subtle hover:border-purple-300 transition group">
                 <div class="flex items-center justify-between">
                     <div class="text-xs font-medium text-slate-500">GPU 向量替代推荐</div>
                     <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -150,166 +168,233 @@
                     </div>
                 </div>
                 <div id="stat-substitutes" class="text-2xl font-black text-purple-600 mt-2">1 款</div>
-                <div class="text-[11px] text-purple-700 flex items-center mt-1.5 font-medium">
-                    <i data-lucide="zap" class="w-3 h-3 mr-1"></i> Pin-to-Pin 相似度 99.5%
+                <div class="text-[11px] text-purple-700 flex items-center mt-1 font-medium">
+                    <i data-lucide="zap" class="w-3 h-3 mr-1"></i> Pin-to-Pin 兼容性 99.5%
                 </div>
             </div>
 
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-xs hover:border-emerald-300 transition group">
+            <div class="bg-white border border-slate-200/90 rounded-2xl p-4.5 shadow-subtle hover:border-emerald-300 transition group">
                 <div class="flex items-center justify-between">
-                    <div class="text-xs font-medium text-slate-500">优化后采购总预算</div>
+                    <div class="text-xs font-medium text-slate-500">采购总预算与降本</div>
                     <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                         <i data-lucide="badge-percent" class="w-4 h-4"></i>
                     </div>
                 </div>
                 <div id="stat-total-savings" class="text-2xl font-black text-emerald-600 mt-2">¥ 158,420</div>
-                <div class="text-[11px] text-emerald-700 flex items-center mt-1.5 font-medium">
+                <div class="text-[11px] text-emerald-700 flex items-center mt-1 font-medium">
                     <i data-lucide="trending-down" class="w-3 h-3 mr-1"></i> 综合采购降本 24.8%
                 </div>
             </div>
         </div>
 
-        <!-- Visual Charts & Analytics Section (Visual UI for every BOM) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <!-- Chart 1: Cost & Channel Distribution -->
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-600"></i>
-                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">采购货源与成本构成分布</h3>
-                    </div>
-                    <span class="text-[11px] text-slate-400 font-mono">Channel Mix</span>
-                </div>
-                <div class="h-44 relative flex items-center justify-center">
-                    <canvas id="chart-channel-mix"></canvas>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-3 border-t border-slate-100 mt-2 font-medium">
-                    <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 mr-1.5"></span>立创/国内现货 (42%)</div>
-                    <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 mr-1.5"></span>欧洲EMS呆滞料 (38%)</div>
-                    <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span>国产向量替代料 (15%)</div>
-                    <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 mr-1.5"></span>国际原厂直订 (5%)</div>
-                </div>
-            </div>
-
-            <!-- Chart 2: Lead-Time & Risk Distribution -->
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
-                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">物料交付周期与供应链时效</h3>
-                    </div>
-                    <span class="text-[11px] text-slate-400 font-mono">Lead Time</span>
-                </div>
-                <div class="h-44 relative flex items-center justify-center">
-                    <canvas id="chart-lead-time"></canvas>
-                </div>
-                <div class="text-[11px] text-slate-500 pt-3 border-t border-slate-100 mt-2 flex items-center justify-between">
-                    <span>⚡ 最快现货：<strong>24小时发货</strong></span>
-                    <span class="text-amber-600">🇸🇪 欧洲直飞：<strong>5个工作日</strong></span>
-                </div>
-            </div>
-
-            <!-- Card 3: Supply Chain Decision Insights -->
-            <div class="bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border border-indigo-100 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center space-x-2 text-indigo-700 font-bold text-xs mb-3">
-                        <i data-lucide="shield-check" class="w-4 h-4"></i>
-                        <span>AI 供应链决策与合规速报</span>
-                    </div>
-                    <div class="space-y-2.5 text-xs text-slate-600">
-                        <div class="p-2.5 bg-white/90 border border-indigo-100 rounded-xl shadow-2xs">
-                            <span class="font-bold text-slate-800">🇸🇪 现货套利机会：</span>
-                            <span>检测到 2 款原厂紧缺料号在北欧库房有密封存货，单颗成本降低近 40%。</span>
-                        </div>
-                        <div class="p-2.5 bg-white/90 border border-purple-100 rounded-xl shadow-2xs">
-                            <span class="font-bold text-purple-700">⚡ 替代推荐成功：</span>
-                            <span>纳芯微 NSi6602B 可实现 Pin-to-Pin 平替 ADI 缺料，无需重新画板改线。</span>
-                        </div>
-                        <div class="p-2.5 bg-white/90 border border-emerald-100 rounded-xl shadow-2xs flex items-center justify-between">
-                            <span class="text-emerald-700 font-medium">✅ 出口合规：全清单 EAR99 民用豁免</span>
-                            <span class="text-[10px] text-slate-400 font-mono">Cleared</span>
-                        </div>
-                    </div>
-                </div>
-                <button class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 shadow-xs" onclick="triggerAskAiSummary()">
-                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                    <span>与 AI 深入探讨该 BOM 采购策略</span>
+        <!-- View Switcher Segmented Bar (AI Board vs Pro DataGrid vs Visual Analytics) -->
+        <div class="flex items-center justify-between border-b border-slate-200/90 pb-3">
+            <div class="flex items-center space-x-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 shadow-2xs">
+                <button class="view-tab-btn active bg-white text-slate-900 font-semibold shadow-2xs px-3.5 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition" data-view="board">
+                    <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-600"></i>
+                    <span>💡 AI 决策流看板</span>
                 </button>
+                <button class="view-tab-btn text-slate-600 hover:text-slate-900 font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition" data-view="datagrid">
+                    <i data-lucide="table" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>📋 专业采购数据表格</span>
+                </button>
+                <button class="view-tab-btn text-slate-600 hover:text-slate-900 font-medium px-3.5 py-1.5 rounded-lg text-xs flex items-center space-x-1.5 transition" data-view="analytics">
+                    <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-slate-500"></i>
+                    <span>📊 采购图谱与风险大盘</span>
+                </button>
+            </div>
+
+            <!-- View Info / Quick Filters -->
+            <div class="text-xs text-slate-500 hidden sm:flex items-center space-x-3">
+                <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>国内现货</span>
+                <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-400 mr-1.5"></span>欧洲呆滞料</span>
+                <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-purple-500 mr-1.5"></span>向量替代</span>
             </div>
         </div>
 
-        <!-- Main Workspace Grid: BOM DataGrid + Live Terminal -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-            <!-- Left 2 Cols: Clean BOM DataGrid (YouMind / Modern SaaS Style) -->
-            <div class="xl:col-span-2 bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden flex flex-col">
-                <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
-                    <div class="flex items-center space-x-2">
-                        <i data-lucide="table" class="w-4 h-4 text-indigo-600"></i>
-                        <h2 class="text-sm font-bold text-slate-900 tracking-tight">BOM 结构化核价看板</h2>
-                        <span id="badge-bom-count" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-mono">6 Items</span>
+        <!-- ================= VIEW 1: AI Decision Flow Board (YouMind / Linear Style) ================= -->
+        <div id="view-board" class="workspace-view space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <!-- Column 1: Domestic In-Stock Direct (立创/授权现货) -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-subtle flex flex-col">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <h3 class="text-xs font-bold text-slate-800">国内现货即时锁单</h3>
+                        </div>
+                        <span id="board-count-stock" class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">3 款</span>
                     </div>
-                    <div class="flex items-center space-x-3 text-xs text-slate-500">
-                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5"></span>国内现货</span>
-                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-amber-400 mr-1.5"></span>欧洲现货</span>
-                        <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-purple-500 mr-1.5"></span>向量替代</span>
+                    <div id="board-col-stock" class="space-y-3 flex-1 overflow-y-auto max-h-[580px] custom-scrollbar pr-1">
+                        <!-- Cards populated dynamically -->
                     </div>
                 </div>
 
-                <div class="overflow-x-auto custom-scrollbar flex-1">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200/80">
-                            <tr>
-                                <th class="py-3 px-3.5 w-10 text-center text-slate-400">#</th>
-                                <th class="py-3 px-3.5">物料型号 (MPN)</th>
-                                <th class="py-3 px-3.5">品牌 / 封装</th>
-                                <th class="py-3 px-3.5 text-right">用量 (PCS)</th>
-                                <th class="py-3 px-3.5 text-right">目标价</th>
-                                <th class="py-3 px-3.5 text-right">推荐单价</th>
-                                <th class="py-3 px-3.5">推荐货源 / 决策建议</th>
-                                <th class="py-3 px-3.5 text-center">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bom-table-body" class="divide-y divide-slate-100 text-slate-700">
-                            <!-- Populated dynamically via JS -->
-                        </tbody>
-                    </table>
+                <!-- Column 2: European Dead-Stock Arbitrage (北欧/德国 EMS 呆滞料) -->
+                <div class="bg-white border border-amber-200/80 rounded-2xl p-4 shadow-subtle flex flex-col bg-amber-50/20">
+                    <div class="flex items-center justify-between pb-3 border-b border-amber-100 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <h3 class="text-xs font-bold text-amber-900">🇸🇪 欧洲 EMS 呆滞料套利</h3>
+                        </div>
+                        <span id="board-count-eu" class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 font-semibold">2 款</span>
+                    </div>
+                    <div id="board-col-eu" class="space-y-3 flex-1 overflow-y-auto max-h-[580px] custom-scrollbar pr-1">
+                        <!-- Cards populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Column 3: GPU Vector Alternatives (停产/缺料 Pin-to-Pin 替代) -->
+                <div class="bg-white border border-purple-200/80 rounded-2xl p-4 shadow-subtle flex flex-col bg-purple-50/20">
+                    <div class="flex items-center justify-between pb-3 border-b border-purple-100 mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                            <h3 class="text-xs font-bold text-purple-900">⚡ GPU 向量替代推荐</h3>
+                        </div>
+                        <span id="board-count-sub" class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 font-semibold">1 款</span>
+                    </div>
+                    <div id="board-col-sub" class="space-y-3 flex-1 overflow-y-auto max-h-[580px] custom-scrollbar pr-1">
+                        <!-- Cards populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW 2: Pro DataGrid (High-Density Tabular BOM) ================= -->
+        <div id="view-datagrid" class="workspace-view hidden bg-white border border-slate-200/90 rounded-2xl shadow-subtle overflow-hidden flex flex-col">
+            <div class="p-3.5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/60">
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="datagrid-search" placeholder="筛选 MPN、品牌或描述..." class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 w-64 shadow-2xs">
+                    <select id="datagrid-filter-status" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 focus:outline-none shadow-2xs">
+                        <option value="all">全部货源状态</option>
+                        <option value="eu">🇸🇪 欧洲现货匹配</option>
+                        <option value="sub">⚡ 向量替代料</option>
+                        <option value="stock">国内现货</option>
+                    </select>
+                </div>
+                <div class="text-xs text-slate-500 font-mono" id="datagrid-count-badge">
+                    Showing 6 of 6 Items
                 </div>
             </div>
 
-            <!-- Right 1 Col: Ego Agent Execution Console (Clean Modern Style) -->
-            <div class="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[520px]">
-                <div class="p-3.5 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></div>
-                        <span class="text-xs font-bold text-slate-800">Ego Agent 真实浏览器查价终端</span>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200/80">
+                        <tr>
+                            <th class="py-3 px-3.5 w-10 text-center text-slate-400">#</th>
+                            <th class="py-3 px-3.5">物料型号 (MPN)</th>
+                            <th class="py-3 px-3.5">品牌 / 封装</th>
+                            <th class="py-3 px-3.5 text-right">用量 (PCS)</th>
+                            <th class="py-3 px-3.5 text-right">目标价</th>
+                            <th class="py-3 px-3.5 text-right">推荐单价</th>
+                            <th class="py-3 px-3.5">智能决策 / 推荐货源</th>
+                            <th class="py-3 px-3.5 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bom-table-body" class="divide-y divide-slate-100 text-slate-700">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ================= VIEW 3: Visual Charts & Analytics ================= -->
+        <div id="view-analytics" class="workspace-view hidden space-y-5">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <!-- Chart 1 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-600"></i>
+                            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">采购货源与成本构成分布</h3>
+                        </div>
+                        <span class="text-[11px] text-slate-400 font-mono">Channel Mix</span>
                     </div>
+                    <div class="h-48 relative flex items-center justify-center">
+                        <canvas id="chart-channel-mix"></canvas>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-3 border-t border-slate-100 mt-2 font-medium">
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 mr-1.5"></span>国内现货 (42%)</div>
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 mr-1.5"></span>欧洲EMS呆滞料 (38%)</div>
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-1.5"></span>国产向量替代 (15%)</div>
+                        <div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 mr-1.5"></span>国际原厂直订 (5%)</div>
+                    </div>
+                </div>
+
+                <!-- Chart 2 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
+                            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">物料交付周期与供应链时效</h3>
+                        </div>
+                        <span class="text-[11px] text-slate-400 font-mono">Lead Time</span>
+                    </div>
+                    <div class="h-48 relative flex items-center justify-center">
+                        <canvas id="chart-lead-time"></canvas>
+                    </div>
+                    <div class="text-[11px] text-slate-500 pt-3 border-t border-slate-100 mt-2 flex items-center justify-between">
+                        <span>⚡ 最快现货：<strong>24小时发货</strong></span>
+                        <span class="text-amber-600">🇸🇪 欧洲直飞：<strong>5个工作日</strong></span>
+                    </div>
+                </div>
+
+                <!-- Insight Summary Card -->
+                <div class="bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border border-indigo-100 rounded-2xl p-5 shadow-subtle flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center space-x-2 text-indigo-700 font-bold text-xs mb-3">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                            <span>AI 供应链决策与合规速报</span>
+                        </div>
+                        <div class="space-y-2.5 text-xs text-slate-600">
+                            <div class="p-3 bg-white/90 border border-indigo-100 rounded-xl shadow-2xs">
+                                <span class="font-bold text-slate-800">🇸🇪 现货套利机会：</span>
+                                <span>检测到 2 款原厂紧缺料号在北欧库房有密封存货，单颗成本降低近 40%。</span>
+                            </div>
+                            <div class="p-3 bg-white/90 border border-purple-100 rounded-xl shadow-2xs">
+                                <span class="font-bold text-purple-700">⚡ 替代推荐成功：</span>
+                                <span>纳芯微 NSi6602B 可实现 Pin-to-Pin 平替 ADI 缺料，无需重新画板改线。</span>
+                            </div>
+                            <div class="p-3 bg-white/90 border border-emerald-100 rounded-xl shadow-2xs flex items-center justify-between">
+                                <span class="text-emerald-700 font-medium">✅ 出口合规：全清单 EAR99 民用豁免</span>
+                                <span class="text-[10px] text-slate-400 font-mono">Cleared</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 shadow-xs" onclick="sendChatMessage('总结一下这份 BOM 的供应链安全与降本空间')">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>与 AI 深入探讨该 BOM 采购策略</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Ego Agent Live Feed Console (Collapsible) -->
+        <div class="bg-white border border-slate-200/90 rounded-2xl shadow-subtle overflow-hidden">
+            <div class="p-3.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between cursor-pointer" onclick="document.getElementById('terminal-collapsible').classList.toggle('hidden')">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></div>
+                    <span class="text-xs font-bold text-slate-800">Ego Agent 真实浏览器查价终端</span>
                     <span id="agent-status-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
                         IDLE
                     </span>
                 </div>
-
-                <!-- Terminal Body -->
-                <div id="agent-terminal-logs" class="flex-1 bg-slate-900 text-emerald-400 p-4 font-mono text-[11px] leading-relaxed overflow-y-auto custom-scrollbar space-y-2">
-                    <div class="text-slate-400">[System] ChipFlow Multi-Agent Sourcing Cluster 已初始化。</div>
-                    <div class="text-slate-400">[Browser] Ego Runtime 连接成功 (CDP 9222 / Isolated Session).</div>
-                    <div class="text-slate-300">💡 点击上方【一键启动 Ego 浏览器查价 Agent】或单行【查价】即可实时查看 Agent 抓取与决策全过程。</div>
-                </div>
-
-                <div class="p-3 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
-                    <span>模式: <strong class="text-slate-700">真实用户会话复用 (免封号)</strong></span>
-                    <span class="text-emerald-600 font-semibold">反爬穿透率: 100%</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+            </div>
+            <div id="terminal-collapsible" class="p-4 bg-slate-900 text-emerald-400 font-mono text-[11px] leading-relaxed max-h-48 overflow-y-auto custom-scrollbar space-y-1.5">
+                <div class="text-slate-400">[System] ChipFlow Multi-Agent Sourcing Cluster 已就绪。</div>
+                <div class="text-slate-400">[Browser] Ego Runtime 连接成功 (CDP 9222 / User Session Reuse).</div>
+                <div id="agent-terminal-logs" class="space-y-1.5">
+                    <!-- Stream logs -->
                 </div>
             </div>
-
         </div>
 
     </main>
 
     <!-- Side AI Chat Copilot Drawer (YouMind / Notion Style) -->
-    <div id="ai-chat-drawer" class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 border-l border-slate-200 flex flex-col">
+    <div id="ai-chat-drawer" class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-float z-50 transform translate-x-full transition-transform duration-300 border-l border-slate-200 flex flex-col">
         <!-- Chat Header -->
-        <div class="p-4 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/80">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
             <div class="flex items-center space-x-2.5">
                 <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center text-white shadow-xs">
                     <i data-lucide="sparkles" class="w-4 h-4"></i>
@@ -363,9 +448,84 @@
         </div>
     </div>
 
+    <!-- ================= MULTIMODAL BOM UPLOAD MODAL (Excel / PDF / Image OCR / Clipboard) ================= -->
+    <div id="modal-upload" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full shadow-float overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i data-lucide="file-up" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">多模态 BOM 智能解析工作台</h3>
+                        <p class="text-xs text-slate-500">支持 Excel、PDF 报价/图纸、手机拍照与截图 OCR 识别</p>
+                    </div>
+                </div>
+                <button class="modal-close text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Upload Type Tabs -->
+            <div class="p-4 border-b border-slate-100 bg-slate-50/40 flex items-center space-x-2">
+                <button class="upload-tab-btn active bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5" data-tab="file">
+                    <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                    <span>Excel / CSV 文件</span>
+                </button>
+                <button class="upload-tab-btn text-slate-600 hover:text-slate-900 font-medium px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5" data-tab="pdf">
+                    <i data-lucide="file-text" class="w-3.5 h-3.5 text-rose-500"></i>
+                    <span>PDF 图纸 / 报价单</span>
+                </button>
+                <button class="upload-tab-btn text-slate-600 hover:text-slate-900 font-medium px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5" data-tab="image">
+                    <i data-lucide="image" class="w-3.5 h-3.5 text-sky-500"></i>
+                    <span>截图 / 拍照 OCR</span>
+                </button>
+                <button class="upload-tab-btn text-slate-600 hover:text-slate-900 font-medium px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1.5" data-tab="text">
+                    <i data-lucide="clipboard-type" class="w-3.5 h-3.5 text-emerald-500"></i>
+                    <span>文本 / 剪贴板粘贴</span>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-4">
+                <!-- Dropzone Area -->
+                <div id="universal-dropzone" class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-8 text-center cursor-pointer transition bg-slate-50/50 group">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3 group-hover:scale-105 transition">
+                        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                    </div>
+                    <div id="dropzone-text-main" class="text-xs font-bold text-slate-800">
+                        拖拽文件至此处，或点击浏览本地文件
+                    </div>
+                    <div id="dropzone-text-sub" class="text-[11px] text-slate-400 mt-1">
+                        支持格式：.xlsx, .xls, .csv, .pdf, .png, .jpg (支持直接 Cmd+V 粘贴截图)
+                    </div>
+                    <input type="file" id="universal-file-input" class="hidden" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg,.webp">
+                </div>
+
+                <!-- Textarea Tab Content -->
+                <div id="tab-content-text" class="hidden space-y-2">
+                    <div class="text-xs text-slate-500">直接粘贴 BOM 表格行（支持从任意聊天工具或邮件中复制）：</div>
+                    <textarea id="raw-text-input" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-500 font-mono" placeholder="FS32K144HAT0MLHT  2000  NXP&#10;TPS54302DDCR  5000  TI&#10;ADUM4120BRIZ  1500  ADI"></textarea>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-[11px] text-slate-400">💡 提示：按住 <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">⌘V</kbd> 可在页面任意位置直接粘贴 BOM 截图</span>
+                    <div class="flex space-x-2">
+                        <button class="modal-close px-4 py-2 rounded-xl text-xs text-slate-500 hover:text-slate-800">取消</button>
+                        <button id="btn-submit-universal-upload" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition shadow-xs">
+                            AI 智能解析并导入
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal 1: GPU Parametric Vector Substitute Radar Modal -->
     <div id="modal-vector" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full shadow-float overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-purple-50/50">
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shadow-xs">
@@ -392,7 +552,7 @@
 
     <!-- Modal 2: European Dead-Stock & Trilingual Email Studio Modal -->
     <div id="modal-email" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-3xl w-full shadow-float overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-amber-50/50">
                 <div class="flex items-center space-x-3">
                     <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shadow-xs">
@@ -417,42 +577,40 @@
         </div>
     </div>
 
-    <!-- Modal 3: Custom BOM Upload Modal -->
-    <div id="modal-upload" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white border border-slate-200 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-                <div class="flex items-center space-x-2">
-                    <i data-lucide="file-up" class="w-5 h-5 text-indigo-600"></i>
-                    <h3 class="text-sm font-bold text-slate-900">导入自定义 BOM 表格或文本</h3>
-                </div>
-                <button class="modal-close text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
+    <!-- Spotlight Command Palette Modal (⌘K) -->
+    <div id="modal-command-palette" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-start justify-center pt-24 p-4">
+        <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full shadow-float overflow-hidden">
+            <div class="p-3.5 border-b border-slate-100 flex items-center space-x-2.5">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                <input type="text" id="cmd-input" placeholder="输入物料型号、指令或提问 AI..." class="flex-1 text-xs text-slate-800 focus:outline-none">
+                <kbd class="text-[10px] px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400 font-mono">ESC</kbd>
             </div>
-
-            <div class="p-6 space-y-4">
-                <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50/50" id="drop-zone">
-                    <i data-lucide="file-spreadsheet" class="w-10 h-10 text-indigo-500 mx-auto mb-2"></i>
-                    <div class="text-xs font-semibold text-slate-800">拖拽 Excel / CSV 文件至此处，或点击选择</div>
-                    <div class="text-[11px] text-slate-500 mt-1">支持 .xlsx, .xls, .csv 等多种中英文非标格式</div>
-                    <input type="file" id="file-input" class="hidden" accept=".xlsx,.xls,.csv">
+            <div class="p-2 text-xs text-slate-600 space-y-1">
+                <div class="p-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center justify-between" onclick="switchView('board'); closeCmdPalette();">
+                    <span class="flex items-center space-x-2"><i data-lucide="layout-grid" class="w-3.5 h-3.5 text-indigo-500"></i><span>切换到 AI 决策流看板</span></span>
+                    <span class="text-[10px] text-slate-400">视图 1</span>
                 </div>
-
-                <div class="text-xs text-center text-slate-400">或直接粘贴表格/文本行</div>
-
-                <textarea id="raw-text-input" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-500 font-mono" placeholder="STM32F407VGT6  1000  ST&#10;TPS54302DDCR  5000  TI"></textarea>
-
-                <div class="flex justify-end space-x-2 pt-2">
-                    <button class="modal-close px-4 py-2 rounded-xl text-xs text-slate-500 hover:text-slate-800">取消</button>
-                    <button id="btn-submit-upload" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition shadow-xs">
-                        AI 智能解析并导入
-                    </button>
+                <div class="p-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center justify-between" onclick="switchView('datagrid'); closeCmdPalette();">
+                    <span class="flex items-center space-x-2"><i data-lucide="table" class="w-3.5 h-3.5 text-indigo-500"></i><span>切换到 专业采购数据表格</span></span>
+                    <span class="text-[10px] text-slate-400">视图 2</span>
+                </div>
+                <div class="p-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center justify-between" onclick="switchView('analytics'); closeCmdPalette();">
+                    <span class="flex items-center space-x-2"><i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-indigo-500"></i><span>查看 采购图谱与风险大盘</span></span>
+                    <span class="text-[10px] text-slate-400">视图 3</span>
+                </div>
+                <div class="p-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center justify-between" onclick="runAllAgents(); closeCmdPalette();">
+                    <span class="flex items-center space-x-2"><i data-lucide="play" class="w-3.5 h-3.5 text-emerald-500"></i><span>一键启动 Ego 浏览器全量查价</span></span>
+                    <span class="text-[10px] text-slate-400">Action</span>
+                </div>
+                <div class="p-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center justify-between" onclick="sendChatMessage('总结一下这份 BOM 的供应链安全与降本空间'); closeCmdPalette();">
+                    <span class="flex items-center space-x-2"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-purple-500"></i><span>让 AI 评估当前 BOM 降本空间</span></span>
+                    <span class="text-[10px] text-slate-400">AI Prompt</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Frontend Logic Script -->
     <script src="/static/js/app.js"></script>
     <script>
         lucide.createIcons();
