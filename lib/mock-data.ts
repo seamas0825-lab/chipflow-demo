@@ -1,8 +1,12 @@
-export type ExportControl = "EAR99" | "ITAR" | "None"
+export type ExportControl = "EAR99" | "5A992" | "ITAR" | "None"
 
-export type LineStatus = "sourced" | "needs-sourcing" | "deadstock-arbitrage" | "vector-alternative" | "ready-to-quote"
+export type LineStatus = "sourced" | "shortage" | "matched" | "rfq-pending" | "reserved"
 
 export type ChannelKey = "lcsc" | "mouser" | "digikey" | "deadstock"
+
+export type TrustLevel = 0 | 1 | 2 | 3 | 4
+
+export type MatchLevel = 1 | 2 | 3 // 1: Exact Match, 2: Manufacturer Equivalent, 3: Suggested Alternative
 
 export interface ChannelOffer {
   channel: ChannelKey
@@ -19,26 +23,122 @@ export interface PriceTier {
   unitPrice: number
 }
 
-export interface ParametricDiff {
-  param: string
-  original: string
-  alternative: string
-  match: "exact" | "close" | "review"
+export interface ChipFlowScoreBreakdown {
+  mpnMatch: number // max 25
+  supplierTrust: number // max 20
+  priceScore: number // max 15
+  traceability: number // max 15
+  dateCode: number // max 10
+  leadTime: number // max 10
+  logistics: number // max 5
+  notes: string[]
 }
 
-export interface AlternativePart {
+export interface InventoryLot {
+  id: string
+  lotCode: string
   mpn: string
+  normalizedMpn: string
   manufacturer: string
-  matchScore: number
-  priceDelta: number
-  leadTimeDays: number
-  diffs: ParametricDiff[]
+  quantity: number
+  unitPrice: number
+  currency: string
+  dateCode: string
+  packaging: "Original Tray" | "Tape & Reel" | "Tube" | "Cut Tape" | "Bulk"
+  condition: "Factory Sealed" | "Original Pack" | "Excess Unused"
+  country: string
+  city: string
+  warehouse: string
+  isAnonymous: boolean
+  supplierDisplay: string
+  supplierId: string
+  trustLevel: TrustLevel
+  cocAvailable: boolean
+  originalInvoice: boolean
+  photosAvailable: boolean
+  inspectionReportAvailable: boolean
+  status: "available" | "reserved" | "sold"
+  listedAt: string
+}
+
+export interface ComplianceEvidence {
+  eccn: ExportControl
+  source: string
+  verifiedDate: string
+  sourceType: "Manufacturer Official" | "Distributor Direct" | "Third-Party DB"
+  confidence: "Authoritative" | "High" | "Requires Review"
+  hasConflict: boolean
+  conflictDetails?: string
+}
+
+export interface SourcingOpportunity {
+  id: string
+  bomLineId: string
+  refDes: string
+  demandMpn: string
+  normalizedMpn: string
+  manufacturer: string
+  description: string
+  demandQty: number
+  demandTargetPrice: number
+  distributorMedianPrice: number
+  matchLevel: MatchLevel
+  matchLevelLabel: string
+  matchedLot: InventoryLot
+  chipFlowScore: number // 0 - 100
+  scoreBreakdown: ChipFlowScoreBreakdown
+  potentialSavings: number
+  confirmedSavings: number
+  status:
+    | "needs-sourcing"
+    | "matches-found"
+    | "supplier-contacted"
+    | "inventory-confirmed"
+    | "verification"
+    | "negotiation"
+    | "reserved"
+    | "purchased"
+  compliance: ComplianceEvidence
+}
+
+export interface RfqMessage {
+  id: string
+  time: string
+  sender: "buyer" | "seller" | "chipflow_system"
+  senderName: string
+  text: string
+}
+
+export interface RfqRecord {
+  id: string
+  opportunityId: string
+  mpn: string
+  demandQty: number
+  offeredLotId: string
+  supplierDisplay: string
+  targetUnitPrice: number
+  offeredUnitPrice: number
+  currency: string
+  status: "draft" | "sent" | "confirmed" | "reserved" | "purchased"
+  sentDate: string
+  validUntil: string
+  messages: RfqMessage[]
+}
+
+export interface BomLineConfidence {
+  mpn: number
+  manufacturer: number
+  qty: number
+  targetPrice: number
+  isLowConfidence?: boolean
 }
 
 export interface BomLine {
   id: string
   refDes: string
+  rawMpn: string
   mpn: string
+  normalizedMpn: string
   manufacturer: string
   description: string
   category: string
@@ -46,13 +146,13 @@ export interface BomLine {
   qty: number
   targetPrice: number
   status: LineStatus
+  confidence: BomLineConfidence
   exportControl: ExportControl
-  riskScore: number
   bestChannel: ChannelKey
   savingsPct: number
   offers: ChannelOffer[]
   tiers: PriceTier[]
-  alternatives: AlternativePart[]
+  opportunityId?: string
   notes?: string
 }
 
@@ -61,491 +161,701 @@ export const project = {
   code: "PRJ-4471",
   totalLines: 18,
   totalUnits: 24500,
-  originalCost: 186420,
-  optimizedCost: 152310,
+  originalBudget: 186420,
+  potentialSavings: 34200,
+  confirmedSavings: 8420,
   currency: "USD",
 }
 
+// -------------------------------------------------------------
+// Verified Inventory Lots (Europe / DACH / Nordic EMS Network)
+// -------------------------------------------------------------
+export const inventoryLots: InventoryLot[] = [
+  {
+    id: "LOT-SE-9912",
+    lotCode: "LOT-2024-A29177",
+    mpn: "STM32F103C8T6",
+    normalizedMpn: "STM32F103C8T6",
+    manufacturer: "STMicroelectronics",
+    quantity: 8400,
+    unitPrice: 1.26,
+    currency: "USD",
+    dateCode: "2224",
+    packaging: "Original Tray",
+    condition: "Factory Sealed",
+    country: "Sweden",
+    city: "Gothenburg",
+    warehouse: "NordicEMS Gothenburg Hub",
+    isAnonymous: true,
+    supplierDisplay: "Verified Tier-1 EMS · Gothenburg, Sweden",
+    supplierId: "SUPP-SE-04",
+    trustLevel: 3,
+    cocAvailable: true,
+    originalInvoice: true,
+    photosAvailable: true,
+    inspectionReportAvailable: true,
+    status: "available",
+    listedAt: "2026-08-20",
+  },
+  {
+    id: "LOT-DE-4410",
+    lotCode: "LOT-2024-M77812",
+    mpn: "TPS62130RGTR",
+    normalizedMpn: "TPS62130RGTR",
+    manufacturer: "Texas Instruments",
+    quantity: 6000,
+    unitPrice: 0.94,
+    currency: "USD",
+    dateCode: "2312",
+    packaging: "Tape & Reel",
+    condition: "Factory Sealed",
+    country: "Germany",
+    city: "Munich",
+    warehouse: "Bavaria Logistics Park",
+    isAnonymous: true,
+    supplierDisplay: "Verified Automotive EMS · Munich, Germany",
+    supplierId: "SUPP-DE-11",
+    trustLevel: 4,
+    cocAvailable: true,
+    originalInvoice: true,
+    photosAvailable: true,
+    inspectionReportAvailable: true,
+    status: "reserved",
+    listedAt: "2026-08-18",
+  },
+  {
+    id: "LOT-FI-1092",
+    lotCode: "LOT-2023-F33201",
+    mpn: "W25Q128JVSIQ",
+    normalizedMpn: "W25Q128JVSIQ",
+    manufacturer: "Winbond",
+    quantity: 12000,
+    unitPrice: 0.62,
+    currency: "USD",
+    dateCode: "2340",
+    packaging: "Tape & Reel",
+    condition: "Factory Sealed",
+    country: "Finland",
+    city: "Espoo",
+    warehouse: "Otaniemi Tech Supply",
+    isAnonymous: true,
+    supplierDisplay: "Verified Telecom EMS · Espoo, Finland",
+    supplierId: "SUPP-FI-02",
+    trustLevel: 3,
+    cocAvailable: true,
+    originalInvoice: true,
+    photosAvailable: true,
+    inspectionReportAvailable: false,
+    status: "available",
+    listedAt: "2026-08-22",
+  },
+  {
+    id: "LOT-SE-8831",
+    lotCode: "LOT-2024-N55019",
+    mpn: "SP3232EEY-L/TR",
+    normalizedMpn: "SP3232EEY-L",
+    manufacturer: "MaxLinear",
+    quantity: 4500,
+    unitPrice: 0.48,
+    currency: "USD",
+    dateCode: "2250",
+    packaging: "Tape & Reel",
+    condition: "Original Pack",
+    country: "Sweden",
+    city: "Stockholm",
+    warehouse: "Kista Industrial Center",
+    isAnonymous: true,
+    supplierDisplay: "Verified Industrial EMS · Stockholm, Sweden",
+    supplierId: "SUPP-SE-09",
+    trustLevel: 2,
+    cocAvailable: true,
+    originalInvoice: false,
+    photosAvailable: true,
+    inspectionReportAvailable: false,
+    status: "available",
+    listedAt: "2026-08-24",
+  },
+  {
+    id: "LOT-DE-6623",
+    lotCode: "LOT-2024-B11044",
+    mpn: "LAN8720A-CP",
+    normalizedMpn: "LAN8720A-CP",
+    manufacturer: "Microchip Technology",
+    quantity: 3600,
+    unitPrice: 1.08,
+    currency: "USD",
+    dateCode: "2318",
+    packaging: "Original Tray",
+    condition: "Factory Sealed",
+    country: "Germany",
+    city: "Stuttgart",
+    warehouse: "Stuttgart West Hub",
+    isAnonymous: true,
+    supplierDisplay: "Verified EMS Partner · Stuttgart, Germany",
+    supplierId: "SUPP-DE-07",
+    trustLevel: 3,
+    cocAvailable: true,
+    originalInvoice: true,
+    photosAvailable: true,
+    inspectionReportAvailable: true,
+    status: "available",
+    listedAt: "2026-08-21",
+  },
+]
+
+// -------------------------------------------------------------
+// Sourcing Opportunities (Demand × Excess Inventory Matches)
+// -------------------------------------------------------------
+export const sourcingOpportunities: SourcingOpportunity[] = [
+  {
+    id: "OPP-001",
+    bomLineId: "L001",
+    refDes: "U1",
+    demandMpn: "STM32F103C8T6",
+    normalizedMpn: "STM32F103C8T6",
+    manufacturer: "STMicroelectronics",
+    description: "ARM Cortex-M3 MCU, 64KB Flash, LQFP48",
+    demandQty: 2400,
+    demandTargetPrice: 1.92,
+    distributorMedianPrice: 2.39,
+    matchLevel: 1,
+    matchLevelLabel: "Exact Match",
+    matchedLot: inventoryLots[0],
+    chipFlowScore: 94,
+    scoreBreakdown: {
+      mpnMatch: 25,
+      supplierTrust: 19,
+      priceScore: 15,
+      traceability: 14,
+      dateCode: 9,
+      leadTime: 8,
+      logistics: 4,
+      notes: [
+        "Exact MPN match (100% pin & package parity)",
+        "Quantity sufficient: Demand 2,400 pcs vs Lot 8,400 pcs",
+        "Original CoC & Factory Sealed Tray verified",
+        "EMS Verified in Gothenburg, Sweden (3 days express)",
+        "Unit price $1.26 vs Market $2.39 (34% savings below target)",
+      ],
+    },
+    potentialSavings: 1584,
+    confirmedSavings: 0,
+    status: "inventory-confirmed",
+    compliance: {
+      eccn: "EAR99",
+      source: "STMicroelectronics Official Master Catalog",
+      verifiedDate: "2026-08-25",
+      sourceType: "Manufacturer Official",
+      confidence: "Authoritative",
+      hasConflict: false,
+    },
+  },
+  {
+    id: "OPP-002",
+    bomLineId: "L002",
+    refDes: "U5",
+    demandMpn: "TPS62130RGTR",
+    normalizedMpn: "TPS62130RGTR",
+    manufacturer: "Texas Instruments",
+    description: "3A Step-Down DC-DC Converter, 16-VQFN",
+    demandQty: 2400,
+    demandTargetPrice: 1.45,
+    distributorMedianPrice: 1.78,
+    matchLevel: 1,
+    matchLevelLabel: "Exact Match",
+    matchedLot: inventoryLots[1],
+    chipFlowScore: 96,
+    scoreBreakdown: {
+      mpnMatch: 25,
+      supplierTrust: 20,
+      priceScore: 15,
+      traceability: 15,
+      dateCode: 9,
+      leadTime: 8,
+      logistics: 4,
+      notes: [
+        "Exact MPN match",
+        "Level 4 ChipFlow Inspected + Automotive EMS in Munich",
+        "Original Invoice & CoC available",
+        "Date code 2312 (< 24 months)",
+        "Unit price $0.94 vs Market $1.78",
+      ],
+    },
+    potentialSavings: 1224,
+    confirmedSavings: 1224,
+    status: "reserved",
+    compliance: {
+      eccn: "EAR99",
+      source: "Texas Instruments Official Export Database",
+      verifiedDate: "2026-08-25",
+      sourceType: "Manufacturer Official",
+      confidence: "Authoritative",
+      hasConflict: false,
+    },
+  },
+  {
+    id: "OPP-003",
+    bomLineId: "L004",
+    refDes: "U11",
+    demandMpn: "W25Q128JVSIQ",
+    normalizedMpn: "W25Q128JVSIQ",
+    manufacturer: "Winbond",
+    description: "128Mb SPI NOR Flash, 133MHz, SOIC-8",
+    demandQty: 2400,
+    demandTargetPrice: 0.88,
+    distributorMedianPrice: 1.05,
+    matchLevel: 1,
+    matchLevelLabel: "Exact Match",
+    matchedLot: inventoryLots[2],
+    chipFlowScore: 91,
+    scoreBreakdown: {
+      mpnMatch: 25,
+      supplierTrust: 18,
+      priceScore: 15,
+      traceability: 13,
+      dateCode: 9,
+      leadTime: 7,
+      logistics: 4,
+      notes: [
+        "Exact MPN match",
+        "Lot size 12,000 pcs in Espoo, Finland",
+        "CoC available, Tape & Reel package",
+        "Unit price $0.62 vs Target $0.88",
+      ],
+    },
+    potentialSavings: 624,
+    confirmedSavings: 0,
+    status: "matches-found",
+    compliance: {
+      eccn: "5A992",
+      source: "Winbond Electronics Product Notification",
+      verifiedDate: "2026-08-24",
+      sourceType: "Manufacturer Official",
+      confidence: "Authoritative",
+      hasConflict: false,
+    },
+  },
+  {
+    id: "OPP-004",
+    bomLineId: "L006",
+    refDes: "U8",
+    demandMpn: "LAN8720A-CP",
+    normalizedMpn: "LAN8720A-CP",
+    manufacturer: "Microchip Technology",
+    description: "Small Footprint RMII 10/100 Ethernet Transceiver, QFN-24",
+    demandQty: 2400,
+    demandTargetPrice: 1.62,
+    distributorMedianPrice: 1.95,
+    matchLevel: 1,
+    matchLevelLabel: "Exact Match",
+    matchedLot: inventoryLots[4],
+    chipFlowScore: 89,
+    scoreBreakdown: {
+      mpnMatch: 25,
+      supplierTrust: 18,
+      priceScore: 14,
+      traceability: 13,
+      dateCode: 8,
+      leadTime: 7,
+      logistics: 4,
+      notes: [
+        "Exact MPN match",
+        "3,600 pcs in Stuttgart, Germany",
+        "Full CoC and third-party AOI inspection passed",
+      ],
+    },
+    potentialSavings: 1296,
+    confirmedSavings: 0,
+    status: "supplier-contacted",
+    compliance: {
+      eccn: "EAR99",
+      source: "Microchip Technology ECCN Directory",
+      verifiedDate: "2026-08-24",
+      sourceType: "Manufacturer Official",
+      confidence: "Authoritative",
+      hasConflict: false,
+    },
+  },
+  {
+    id: "OPP-005",
+    bomLineId: "L003",
+    refDes: "U3",
+    demandMpn: "MAX3232ESE+T",
+    normalizedMpn: "MAX3232ESE+",
+    manufacturer: "Analog Devices / Maxim",
+    description: "3.0V to 5.5V RS-232 Transceiver, SOIC-16",
+    demandQty: 2400,
+    demandTargetPrice: 0.95,
+    distributorMedianPrice: 1.34,
+    matchLevel: 2,
+    matchLevelLabel: "MFR Equivalent (Review Req.)",
+    matchedLot: inventoryLots[3], // SP3232EEY-L
+    chipFlowScore: 84,
+    scoreBreakdown: {
+      mpnMatch: 20,
+      supplierTrust: 16,
+      priceScore: 15,
+      traceability: 12,
+      dateCode: 9,
+      leadTime: 8,
+      logistics: 4,
+      notes: [
+        "Manufacturer Equivalent: SP3232EEY (MaxLinear)",
+        "Pin-to-pin compatible RS-232 transceiver",
+        "Engineering Review Recommended for ESD threshold",
+        "Stockholm EMS stock at $0.48 (49% cost reduction)",
+      ],
+    },
+    potentialSavings: 1128,
+    confirmedSavings: 0,
+    status: "matches-found",
+    compliance: {
+      eccn: "EAR99",
+      source: "MaxLinear Compliance Department",
+      verifiedDate: "2026-08-25",
+      sourceType: "Manufacturer Official",
+      confidence: "High",
+      hasConflict: false,
+    },
+  },
+]
+
+// -------------------------------------------------------------
+// Active RFQs & Transactions
+// -------------------------------------------------------------
+export const rfqRecords: RfqRecord[] = [
+  {
+    id: "RFQ-2026-881",
+    opportunityId: "OPP-001",
+    mpn: "STM32F103C8T6",
+    demandQty: 2400,
+    offeredLotId: "LOT-SE-9912",
+    supplierDisplay: "Verified Tier-1 EMS · Gothenburg, Sweden",
+    targetUnitPrice: 1.26,
+    offeredUnitPrice: 1.26,
+    currency: "USD",
+    status: "confirmed",
+    sentDate: "2026-08-25 04:12",
+    validUntil: "2026-08-28",
+    messages: [
+      {
+        id: "M1",
+        time: "04:12",
+        sender: "buyer",
+        senderName: "Eliot (ChipFlow Procurement)",
+        text: "Hej! We request formal quote and reservation for 2,400 pcs of STM32F103C8T6 (Lot A29177) at $1.26/pc. Please confirm factory sealed tray and CoC availability for dispatch to Shenzhen EMS.",
+      },
+      {
+        id: "M2",
+        time: "05:40",
+        sender: "seller",
+        senderName: "Nordic Supply Desk (Verified EMS)",
+        text: "Quote accepted. 2,400 pcs reserved from Tray Lot A29177. Date code 2224 confirmed. Factory CoC and high-res packaging photos uploaded to ChipFlow Trust Vault. Ready for escrow.",
+      },
+    ],
+  },
+  {
+    id: "RFQ-2026-879",
+    opportunityId: "OPP-002",
+    mpn: "TPS62130RGTR",
+    demandQty: 2400,
+    offeredLotId: "LOT-DE-4410",
+    supplierDisplay: "Verified Automotive EMS · Munich, Germany",
+    targetUnitPrice: 0.94,
+    offeredUnitPrice: 0.94,
+    currency: "USD",
+    status: "reserved",
+    sentDate: "2026-08-24 18:30",
+    validUntil: "2026-08-27",
+    messages: [
+      {
+        id: "M1",
+        time: "18:30",
+        sender: "buyer",
+        senderName: "Eliot (ChipFlow)",
+        text: "Inquiry for 2,400 pcs TPS62130RGTR Tape & Reel. Delivery required to Frankfurt hub.",
+      },
+      {
+        id: "M2",
+        time: "19:15",
+        sender: "seller",
+        senderName: "Bavaria EMS Sourcing",
+        text: "Confirmed. 2,400 pcs reserved under ChipFlow Escrow #DE-99321. Date code 2312, original reels intact.",
+      },
+      {
+        id: "M3",
+        time: "20:00",
+        sender: "chipflow_system",
+        senderName: "ChipFlow Trust Engine",
+        text: "Inspection verified. $1,224.00 confirmed savings locked into project PRJ-4471.",
+      },
+    ],
+  },
+  {
+    id: "RFQ-2026-882",
+    opportunityId: "OPP-004",
+    mpn: "LAN8720A-CP",
+    demandQty: 2400,
+    offeredLotId: "LOT-DE-6623",
+    supplierDisplay: "Verified EMS Partner · Stuttgart, Germany",
+    targetUnitPrice: 1.08,
+    offeredUnitPrice: 1.12,
+    currency: "USD",
+    status: "sent",
+    sentDate: "2026-08-25 06:10",
+    validUntil: "2026-08-29",
+    messages: [
+      {
+        id: "M1",
+        time: "06:10",
+        sender: "buyer",
+        senderName: "Eliot (ChipFlow)",
+        text: "RFQ sent for 2,400 pcs LAN8720A-CP. Target unit price $1.08 with standard EU export documentation.",
+      },
+    ],
+  },
+]
+
+// -------------------------------------------------------------
+// Standardized BOM Lines
+// -------------------------------------------------------------
 export const bomLines: BomLine[] = [
   {
     id: "L001",
     refDes: "U1",
+    rawMpn: "STM32F103C8T6-TR",
     mpn: "STM32F103C8T6",
+    normalizedMpn: "STM32F103C8T6",
     manufacturer: "STMicroelectronics",
     description: "ARM Cortex-M3 MCU, 64KB Flash, LQFP48",
     category: "Microcontroller",
     package: "LQFP-48",
     qty: 2400,
     targetPrice: 1.92,
-    status: "deadstock-arbitrage",
+    status: "matched",
+    confidence: { mpn: 99, manufacturer: 98, qty: 100, targetPrice: 95 },
     exportControl: "EAR99",
-    riskScore: 22,
     bestChannel: "deadstock",
     savingsPct: 34,
+    opportunityId: "OPP-001",
     offers: [
+      { channel: "deadstock", label: "EU EMS Excess (Sweden)", unitPrice: 1.26, stock: 8400, leadTimeDays: 3, moq: 500, region: "SE" },
       { channel: "lcsc", label: "LCSC", unitPrice: 1.88, stock: 12400, leadTimeDays: 12, moq: 1, region: "CN" },
       { channel: "mouser", label: "Mouser", unitPrice: 2.41, stock: 3200, leadTimeDays: 5, moq: 1, region: "US" },
       { channel: "digikey", label: "DigiKey", unitPrice: 2.38, stock: 5100, leadTimeDays: 4, moq: 1, region: "US" },
-      { channel: "deadstock", label: "EU Deadstock — NordChip AB", unitPrice: 1.26, stock: 4800, leadTimeDays: 2, moq: 500, region: "SE" },
     ],
     tiers: [
-      { qty: 500, unitPrice: 1.52 },
-      { qty: 1000, unitPrice: 1.38 },
-      { qty: 2500, unitPrice: 1.26 },
-      { qty: 5000, unitPrice: 1.14 },
+      { qty: 500, unitPrice: 1.45 },
+      { qty: 1000, unitPrice: 1.34 },
+      { qty: 2400, unitPrice: 1.26 },
     ],
-    alternatives: [
-      {
-        mpn: "GD32F103C8T6",
-        manufacturer: "GigaDevice",
-        matchScore: 96,
-        priceDelta: -0.61,
-        leadTimeDays: 3,
-        diffs: [
-          { param: "Core", original: "Cortex-M3 @ 72MHz", alternative: "Cortex-M3 @ 108MHz", match: "close" },
-          { param: "Flash", original: "64KB", alternative: "64KB", match: "exact" },
-          { param: "Package", original: "LQFP-48", alternative: "LQFP-48", match: "exact" },
-          { param: "Operating Temp", original: "-40 to 85°C", alternative: "-40 to 85°C", match: "exact" },
-        ],
-      },
-    ],
-    notes: "Deadstock lot verified via 3rd-party AOI report. Traceability docs attached.",
+    notes: "Matched with Gothenburg EMS private excess (Lot A29177). Factory CoC verified.",
   },
   {
     id: "L002",
-    refDes: "U2",
-    mpn: "ESP32-WROOM-32E",
-    manufacturer: "Espressif",
-    description: "Wi-Fi + BLE SoC Module, 4MB Flash",
-    category: "RF Module",
-    package: "Module-38",
+    refDes: "U5",
+    rawMpn: "TPS62130RGTR (TI)",
+    mpn: "TPS62130RGTR",
+    normalizedMpn: "TPS62130RGTR",
+    manufacturer: "Texas Instruments",
+    description: "3A Step-Down DC-DC Converter, 16-VQFN",
+    category: "Power IC",
+    package: "VQFN-16",
     qty: 2400,
-    targetPrice: 2.85,
-    status: "sourced",
+    targetPrice: 1.45,
+    status: "reserved",
+    confidence: { mpn: 99, manufacturer: 99, qty: 100, targetPrice: 96 },
     exportControl: "EAR99",
-    riskScore: 8,
-    bestChannel: "lcsc",
-    savingsPct: 6,
+    bestChannel: "deadstock",
+    savingsPct: 35,
+    opportunityId: "OPP-002",
     offers: [
-      { channel: "lcsc", label: "LCSC", unitPrice: 2.68, stock: 41000, leadTimeDays: 9, moq: 1, region: "CN" },
-      { channel: "mouser", label: "Mouser", unitPrice: 3.05, stock: 8800, leadTimeDays: 3, moq: 1, region: "US" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 3.02, stock: 6200, leadTimeDays: 3, moq: 1, region: "US" },
+      { channel: "deadstock", label: "Munich Automotive EMS", unitPrice: 0.94, stock: 6000, leadTimeDays: 2, moq: 1000, region: "DE" },
+      { channel: "lcsc", label: "LCSC", unitPrice: 1.39, stock: 4500, leadTimeDays: 8, moq: 1, region: "CN" },
+      { channel: "mouser", label: "Mouser", unitPrice: 1.78, stock: 12000, leadTimeDays: 4, moq: 1, region: "US" },
     ],
     tiers: [
-      { qty: 500, unitPrice: 2.9 },
-      { qty: 1000, unitPrice: 2.79 },
-      { qty: 2500, unitPrice: 2.68 },
+      { qty: 1000, unitPrice: 1.05 },
+      { qty: 2400, unitPrice: 0.94 },
     ],
-    alternatives: [],
+    notes: "Lot reserved under Escrow #DE-99321. Date code 2312.",
   },
   {
     id: "L003",
-    refDes: "U5",
-    mpn: "TPS62130RGTR",
-    manufacturer: "Texas Instruments",
-    description: "3A Step-Down Converter, VQFN-16",
-    category: "Power Management",
-    package: "VQFN-16",
+    refDes: "U3",
+    rawMpn: "MAX3232ESE+",
+    mpn: "MAX3232ESE+T",
+    normalizedMpn: "MAX3232ESE+",
+    manufacturer: "Analog Devices / Maxim",
+    description: "3.0V to 5.5V RS-232 Transceiver, SOIC-16",
+    category: "Interface",
+    package: "SOIC-16",
     qty: 2400,
-    targetPrice: 1.15,
-    status: "needs-sourcing",
+    targetPrice: 0.95,
+    status: "matched",
+    confidence: { mpn: 96, manufacturer: 95, qty: 100, targetPrice: 90 },
     exportControl: "EAR99",
-    riskScore: 61,
-    bestChannel: "mouser",
-    savingsPct: 0,
+    bestChannel: "deadstock",
+    savingsPct: 49,
+    opportunityId: "OPP-005",
     offers: [
-      { channel: "mouser", label: "Mouser", unitPrice: 1.34, stock: 640, leadTimeDays: 22, moq: 1, region: "US" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 1.31, stock: 220, leadTimeDays: 26, moq: 1, region: "US" },
-      { channel: "lcsc", label: "LCSC", unitPrice: 1.29, stock: 0, leadTimeDays: 0, moq: 1, region: "CN" },
+      { channel: "deadstock", label: "Stockholm EMS (SP3232E Equivalent)", unitPrice: 0.48, stock: 4500, leadTimeDays: 3, moq: 500, region: "SE" },
+      { channel: "lcsc", label: "LCSC", unitPrice: 0.88, stock: 8000, leadTimeDays: 10, moq: 1, region: "CN" },
+      { channel: "mouser", label: "Mouser", unitPrice: 1.34, stock: 2200, leadTimeDays: 4, moq: 1, region: "US" },
     ],
     tiers: [
-      { qty: 500, unitPrice: 1.42 },
-      { qty: 1000, unitPrice: 1.36 },
-      { qty: 2500, unitPrice: 1.31 },
+      { qty: 500, unitPrice: 0.58 },
+      { qty: 2400, unitPrice: 0.48 },
     ],
-    alternatives: [
-      {
-        mpn: "TPS62130ARGTR",
-        manufacturer: "Texas Instruments",
-        matchScore: 99,
-        priceDelta: 0.02,
-        leadTimeDays: 18,
-        diffs: [
-          { param: "Vin Range", original: "3.0–17V", alternative: "3.0–17V", match: "exact" },
-          { param: "Efficiency", original: "95%", alternative: "96%", match: "exact" },
-        ],
-      },
-      {
-        mpn: "MP2315GJ-Z",
-        manufacturer: "Monolithic Power",
-        matchScore: 88,
-        priceDelta: -0.34,
-        leadTimeDays: 11,
-        diffs: [
-          { param: "Iout Max", original: "3A", alternative: "3A", match: "exact" },
-          { param: "Switching Freq", original: "500kHz", alternative: "1.4MHz", match: "review" },
-          { param: "Package", original: "VQFN-16", alternative: "QFN-12", match: "review" },
-        ],
-      },
-    ],
-    notes: "Global shortage — allocation status active at 2 of 3 franchised distributors.",
+    notes: "Suggested Equivalent: SP3232EEY-L from Stockholm EMS. Engineering review required.",
   },
   {
     id: "L004",
-    refDes: "Y1",
-    mpn: "ABM8-25.000MHZ-B2-T",
-    manufacturer: "Abracon",
-    description: "25MHz Crystal, ±20ppm, SMD 3.2x2.5mm",
-    category: "Timing",
-    package: "SMD-3225",
-    qty: 2400,
-    targetPrice: 0.21,
-    status: "sourced",
-    exportControl: "EAR99",
-    riskScore: 5,
-    bestChannel: "lcsc",
-    savingsPct: 12,
-    offers: [
-      { channel: "lcsc", label: "LCSC", unitPrice: 0.18, stock: 88000, leadTimeDays: 10, moq: 1, region: "CN" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 0.24, stock: 15000, leadTimeDays: 2, moq: 1, region: "US" },
-    ],
-    tiers: [
-      { qty: 1000, unitPrice: 0.19 },
-      { qty: 2500, unitPrice: 0.18 },
-    ],
-    alternatives: [],
-  },
-  {
-    id: "L005",
-    refDes: "U8",
-    mpn: "MAX3232EIPWR",
-    manufacturer: "Texas Instruments",
-    description: "RS-232 Transceiver, 3–5.5V, TSSOP-16",
-    category: "Interface",
-    package: "TSSOP-16",
-    qty: 2400,
-    targetPrice: 1.68,
-    status: "vector-alternative",
-    exportControl: "ITAR",
-    riskScore: 78,
-    bestChannel: "mouser",
-    savingsPct: 0,
-    offers: [
-      { channel: "mouser", label: "Mouser", unitPrice: 1.82, stock: 110, leadTimeDays: 34, moq: 1, region: "US" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 1.79, stock: 60, leadTimeDays: 38, moq: 1, region: "US" },
-    ],
-    tiers: [
-      { qty: 500, unitPrice: 1.95 },
-      { qty: 1000, unitPrice: 1.88 },
-      { qty: 2500, unitPrice: 1.79 },
-    ],
-    alternatives: [
-      {
-        mpn: "SP3232EEY-L/TR",
-        manufacturer: "MaxLinear",
-        matchScore: 94,
-        priceDelta: -0.29,
-        leadTimeDays: 14,
-        diffs: [
-          { param: "ESD Protection", original: "±15kV", alternative: "±15kV", match: "exact" },
-          { param: "Export Class", original: "ITAR", alternative: "EAR99", match: "review" },
-          { param: "Package", original: "TSSOP-16", alternative: "TSSOP-16", match: "exact" },
-        ],
-      },
-    ],
-    notes: "Flagged for export-control substitution — vector alternative removes ITAR license requirement.",
-  },
-  {
-    id: "L006",
-    refDes: "J3",
-    mpn: "USB4105-GF-A",
-    manufacturer: "GCT",
-    description: "USB Type-C Receptacle, 24-pin, SMT",
-    category: "Connector",
-    package: "SMT-24",
-    qty: 2400,
-    targetPrice: 0.62,
-    status: "ready-to-quote",
-    exportControl: "None",
-    riskScore: 14,
-    bestChannel: "lcsc",
-    savingsPct: 18,
-    offers: [
-      { channel: "lcsc", label: "LCSC", unitPrice: 0.54, stock: 22000, leadTimeDays: 11, moq: 1, region: "CN" },
-      { channel: "mouser", label: "Mouser", unitPrice: 0.68, stock: 4100, leadTimeDays: 7, moq: 1, region: "US" },
-    ],
-    tiers: [
-      { qty: 1000, unitPrice: 0.58 },
-      { qty: 2500, unitPrice: 0.54 },
-    ],
-    alternatives: [],
-  },
-  {
-    id: "L007",
     refDes: "U11",
+    rawMpn: "W25Q128JVSIQ-ND",
     mpn: "W25Q128JVSIQ",
+    normalizedMpn: "W25Q128JVSIQ",
     manufacturer: "Winbond",
-    description: "128Mb SPI NOR Flash, SOIC-8",
+    description: "128Mb SPI NOR Flash, 133MHz, SOIC-8",
     category: "Memory",
     package: "SOIC-8",
     qty: 2400,
-    targetPrice: 0.94,
-    status: "deadstock-arbitrage",
-    exportControl: "EAR99",
-    riskScore: 31,
+    targetPrice: 0.88,
+    status: "matched",
+    confidence: { mpn: 98, manufacturer: 98, qty: 100, targetPrice: 95 },
+    exportControl: "5A992",
     bestChannel: "deadstock",
-    savingsPct: 27,
+    savingsPct: 30,
+    opportunityId: "OPP-003",
     offers: [
-      { channel: "lcsc", label: "LCSC", unitPrice: 0.88, stock: 9600, leadTimeDays: 13, moq: 1, region: "CN" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 1.12, stock: 2100, leadTimeDays: 6, moq: 1, region: "US" },
-      { channel: "deadstock", label: "EU Deadstock — Baltic Semi", unitPrice: 0.69, stock: 3600, leadTimeDays: 3, moq: 250, region: "LT" },
+      { channel: "deadstock", label: "Espoo Telecom EMS (Finland)", unitPrice: 0.62, stock: 12000, leadTimeDays: 3, moq: 1000, region: "FI" },
+      { channel: "lcsc", label: "LCSC", unitPrice: 0.82, stock: 25000, leadTimeDays: 7, moq: 1, region: "CN" },
+      { channel: "digikey", label: "DigiKey", unitPrice: 1.05, stock: 18000, leadTimeDays: 4, moq: 1, region: "US" },
     ],
     tiers: [
-      { qty: 1000, unitPrice: 0.79 },
-      { qty: 2500, unitPrice: 0.69 },
+      { qty: 1000, unitPrice: 0.72 },
+      { qty: 2400, unitPrice: 0.62 },
     ],
-    alternatives: [],
+    notes: "Tape & Reel factory stock. Full CoC available.",
   },
   {
-    id: "L008",
-    refDes: "U14",
-    mpn: "BQ24075RGTR",
-    manufacturer: "Texas Instruments",
-    description: "Li-Ion Charger + Power Path, VQFN-16",
-    category: "Power Management",
-    package: "VQFN-16",
+    id: "L005",
+    refDes: "Y1",
+    rawMpn: "ABM8-25.000MHZ",
+    mpn: "ABM8-25.000MHZ-B2-T",
+    normalizedMpn: "ABM8-25.000MHZ",
+    manufacturer: "Abracon LLC",
+    description: "25MHz Crystal ±20ppm 18pF SMD 3.2x2.5mm",
+    category: "Timing",
+    package: "SMD-3225",
     qty: 2400,
-    targetPrice: 1.48,
-    status: "needs-sourcing",
-    exportControl: "EAR99",
-    riskScore: 54,
-    bestChannel: "digikey",
-    savingsPct: 0,
-    offers: [
-      { channel: "digikey", label: "DigiKey", unitPrice: 1.61, stock: 340, leadTimeDays: 19, moq: 1, region: "US" },
-      { channel: "mouser", label: "Mouser", unitPrice: 1.64, stock: 290, leadTimeDays: 21, moq: 1, region: "US" },
-    ],
-    tiers: [
-      { qty: 500, unitPrice: 1.7 },
-      { qty: 1000, unitPrice: 1.66 },
-      { qty: 2500, unitPrice: 1.61 },
-    ],
-    alternatives: [
-      {
-        mpn: "BQ24075RGTT",
-        manufacturer: "Texas Instruments",
-        matchScore: 97,
-        priceDelta: -0.05,
-        leadTimeDays: 16,
-        diffs: [{ param: "Tape/Reel Qty", original: "2500", alternative: "250", match: "review" }],
-      },
-    ],
-  },
-  {
-    id: "L009",
-    refDes: "D2–D9",
-    mpn: "SS14-E3/61T",
-    manufacturer: "Vishay",
-    description: "Schottky Diode, 1A 40V, SMA",
-    category: "Discrete",
-    package: "SMA",
-    qty: 4800,
-    targetPrice: 0.06,
+    targetPrice: 0.42,
     status: "sourced",
+    confidence: { mpn: 95, manufacturer: 96, qty: 100, targetPrice: 90 },
     exportControl: "None",
-    riskScore: 4,
     bestChannel: "lcsc",
-    savingsPct: 9,
+    savingsPct: 17,
     offers: [
-      { channel: "lcsc", label: "LCSC", unitPrice: 0.05, stock: 210000, leadTimeDays: 8, moq: 1, region: "CN" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 0.07, stock: 40000, leadTimeDays: 2, moq: 1, region: "US" },
+      { channel: "lcsc", label: "LCSC", unitPrice: 0.35, stock: 45000, leadTimeDays: 5, moq: 100, region: "CN" },
+      { channel: "mouser", label: "Mouser", unitPrice: 0.54, stock: 8900, leadTimeDays: 3, moq: 1, region: "US" },
     ],
     tiers: [
-      { qty: 2500, unitPrice: 0.052 },
-      { qty: 5000, unitPrice: 0.048 },
+      { qty: 500, unitPrice: 0.38 },
+      { qty: 2400, unitPrice: 0.35 },
     ],
-    alternatives: [],
+    notes: "Direct franchised distributor stock sufficient.",
   },
   {
-    id: "L010",
-    refDes: "C12,C13",
-    mpn: "GRM188R71H104KA93D",
-    manufacturer: "Murata",
-    description: "0.1uF Ceramic Capacitor, X7R, 0603",
-    category: "Passive",
-    package: "0603",
-    qty: 4800,
-    targetPrice: 0.014,
-    status: "sourced",
-    exportControl: "None",
-    riskScore: 2,
-    bestChannel: "lcsc",
-    savingsPct: 15,
-    offers: [
-      { channel: "lcsc", label: "LCSC", unitPrice: 0.012, stock: 980000, leadTimeDays: 7, moq: 1, region: "CN" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 0.016, stock: 320000, leadTimeDays: 2, moq: 1, region: "US" },
-    ],
-    tiers: [
-      { qty: 5000, unitPrice: 0.0125 },
-      { qty: 10000, unitPrice: 0.0118 },
-    ],
-    alternatives: [],
-  },
-  {
-    id: "L011",
-    refDes: "U18",
-    mpn: "ATECC608B-SSHDA-T",
-    manufacturer: "Microchip",
-    description: "Secure Element, I2C, SOIC-8",
-    category: "Security",
-    package: "SOIC-8",
+    id: "L006",
+    refDes: "U8",
+    rawMpn: "LAN8720A-CP-TR",
+    mpn: "LAN8720A-CP",
+    normalizedMpn: "LAN8720A-CP",
+    manufacturer: "Microchip Technology",
+    description: "Small Footprint RMII 10/100 Ethernet Transceiver, QFN-24",
+    category: "Interface",
+    package: "QFN-24",
     qty: 2400,
-    targetPrice: 1.05,
-    status: "needs-sourcing",
+    targetPrice: 1.62,
+    status: "rfq-pending",
+    confidence: { mpn: 99, manufacturer: 99, qty: 100, targetPrice: 95 },
     exportControl: "EAR99",
-    riskScore: 66,
-    bestChannel: "mouser",
-    savingsPct: 0,
+    bestChannel: "deadstock",
+    savingsPct: 33,
+    opportunityId: "OPP-004",
     offers: [
-      { channel: "mouser", label: "Mouser", unitPrice: 1.18, stock: 180, leadTimeDays: 28, moq: 1, region: "US" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 1.21, stock: 95, leadTimeDays: 30, moq: 1, region: "US" },
+      { channel: "deadstock", label: "Stuttgart EMS Partner", unitPrice: 1.08, stock: 3600, leadTimeDays: 4, moq: 500, region: "DE" },
+      { channel: "mouser", label: "Mouser", unitPrice: 1.95, stock: 1500, leadTimeDays: 5, moq: 1, region: "US" },
     ],
     tiers: [
-      { qty: 500, unitPrice: 1.28 },
-      { qty: 1000, unitPrice: 1.22 },
+      { qty: 500, unitPrice: 1.22 },
+      { qty: 2400, unitPrice: 1.08 },
     ],
-    alternatives: [
-      {
-        mpn: "ATECC608A-SSHDA-T",
-        manufacturer: "Microchip",
-        matchScore: 91,
-        priceDelta: -0.11,
-        leadTimeDays: 20,
-        diffs: [{ param: "Silicon Rev", original: "Rev B", alternative: "Rev A", match: "review" }],
-      },
-    ],
-  },
-  {
-    id: "L012",
-    refDes: "L2",
-    mpn: "XFL4020-102MEC",
-    manufacturer: "Coilcraft",
-    description: "1uH Shielded Power Inductor, 4x4mm",
-    category: "Magnetics",
-    package: "4020",
-    qty: 2400,
-    targetPrice: 0.38,
-    status: "vector-alternative",
-    exportControl: "EAR99",
-    riskScore: 41,
-    bestChannel: "mouser",
-    savingsPct: 0,
-    offers: [
-      { channel: "mouser", label: "Mouser", unitPrice: 0.44, stock: 1900, leadTimeDays: 15, moq: 1, region: "US" },
-      { channel: "digikey", label: "DigiKey", unitPrice: 0.43, stock: 2200, leadTimeDays: 14, moq: 1, region: "US" },
-    ],
-    tiers: [
-      { qty: 1000, unitPrice: 0.4 },
-      { qty: 2500, unitPrice: 0.37 },
-    ],
-    alternatives: [
-      {
-        mpn: "SRP4020TA-1R0M",
-        manufacturer: "Bourns",
-        matchScore: 93,
-        priceDelta: -0.09,
-        leadTimeDays: 9,
-        diffs: [
-          { param: "Isat", original: "5.2A", alternative: "4.8A", match: "close" },
-          { param: "DCR", original: "28mΩ", alternative: "31mΩ", match: "close" },
-        ],
-      },
-    ],
+    notes: "Active RFQ-2026-882 sent. Awaiting final seller confirmation.",
   },
 ]
 
-export interface ChatMessage {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  timestamp: string
-  kind?: "text" | "diff" | "email" | "badge-summary"
-}
-
-export const seedChat: ChatMessage[] = [
-  {
-    id: "m1",
-    role: "assistant",
-    content:
-      "I've finished scanning STM32 IoT Gateway — Rev C. 3 lines flagged for deadstock arbitrage, 2 for vector alternatives, and one ITAR-controlled part (U8, MAX3232EIPWR) has an EAR99 substitute available. Want me to draft outreach or run the parametric comparison first?",
-    timestamp: "09:14",
-  },
-]
-
-export const quickPrompts = [
-  "Find a cheaper alternative for U5",
-  "Draft inquiry email for the STM32F103C8T6 deadstock lot",
-  "Check export control status for this BOM",
-  "Compare TPS62130RGTR vs vector alternatives",
-]
-
+// -------------------------------------------------------------
+// Live Agent Activity Feed Log
+// -------------------------------------------------------------
 export interface AgentLogEntry {
   id: string
-  site: "lcsc" | "mouser" | "digikey"
+  site: "lcsc" | "mouser" | "digikey" | "deadstock"
   message: string
+  status: "done" | "running" | "matched"
   timestamp: string
-  status: "running" | "done" | "found"
 }
 
 export const seedAgentLog: AgentLogEntry[] = [
-  { id: "a1", site: "lcsc", message: "Opened search for STM32F103C8T6", timestamp: "09:12:01", status: "done" },
-  { id: "a2", site: "lcsc", message: "Found 12,400 units in stock @ $1.88", timestamp: "09:12:04", status: "found" },
-  { id: "a3", site: "mouser", message: "Querying TPS62130RGTR availability", timestamp: "09:12:11", status: "done" },
-  { id: "a4", site: "mouser", message: "Allocation notice detected — 640 units, 22 day lead time", timestamp: "09:12:14", status: "found" },
-  { id: "a5", site: "digikey", message: "Checking BQ24075RGTR tiered pricing", timestamp: "09:12:20", status: "running" },
+  {
+    id: "a-1",
+    site: "deadstock",
+    message: "NordicEMS Gothenburg: Verified 8,400 pcs STM32F103C8T6 (Lot A29177) with factory CoC at $1.26/pc.",
+    status: "matched",
+    timestamp: "07:28:10",
+  },
+  {
+    id: "a-2",
+    site: "deadstock",
+    message: "Bavaria Automotive Logistics: 2,400 pcs TPS62130RGTR reserved under Escrow #DE-99321.",
+    status: "done",
+    timestamp: "07:29:40",
+  },
+  {
+    id: "a-3",
+    site: "mouser",
+    message: "Mouser API: Pulled real-time tier pricing for LAN8720A-CP ($1.95/pc @ 1,000 pcs).",
+    status: "done",
+    timestamp: "07:31:15",
+  },
+  {
+    id: "a-4",
+    site: "deadstock",
+    message: "Espoo Telecom EMS: Winbond W25Q128JVSIQ 12,000 pcs Tape & Reel verified at $0.62.",
+    status: "matched",
+    timestamp: "07:32:02",
+  },
 ]
 
-export const agentMessagePool: { site: AgentLogEntry["site"]; message: string; status: AgentLogEntry["status"] }[] = [
-  { site: "lcsc", message: "Searching LCSC catalog for W25Q128JVSIQ", status: "running" },
-  { site: "lcsc", message: "Extracted 3-tier pricing table for W25Q128JVSIQ", status: "done" },
-  { site: "mouser", message: "Requesting real-time stock for ATECC608B-SSHDA-T", status: "running" },
-  { site: "mouser", message: "Found 180 units @ $1.18, lead time 28 days", status: "found" },
-  { site: "digikey", message: "Comparing datasheet parameters for XFL4020-102MEC", status: "running" },
-  { site: "digikey", message: "Confirmed footprint match for SRP4020TA-1R0M", status: "done" },
-  { site: "lcsc", message: "Cross-checking deadstock lot traceability for U1", status: "running" },
-  { site: "lcsc", message: "AOI report verified — lot accepted for arbitrage queue", status: "found" },
-  { site: "mouser", message: "Polling backorder ETA for BQ24075RGTR", status: "running" },
-  { site: "digikey", message: "Updated lead-time forecast: 19 days → 16 days", status: "done" },
-]
-
-export const channelMixData = [
-  { channel: "LCSC", value: 42, fill: "var(--color-lcsc)" },
-  { channel: "DigiKey", value: 24, fill: "var(--color-digikey)" },
-  { channel: "Mouser", value: 19, fill: "var(--color-mouser)" },
-  { channel: "EU Deadstock", value: 12, fill: "var(--color-deadstock)" },
-  { channel: "Other", value: 3, fill: "var(--color-other)" },
-]
-
-export const leadTimeData = [
-  { category: "MCU/SoC", lcsc: 12, mouser: 5, digikey: 4 },
-  { category: "Power Mgmt", lcsc: 9, mouser: 22, digikey: 26 },
-  { category: "Memory", lcsc: 13, mouser: 18, digikey: 6 },
-  { category: "Interface", lcsc: 10, mouser: 34, digikey: 38 },
-  { category: "Passive", lcsc: 7, mouser: 4, digikey: 2 },
-  { category: "Connector", lcsc: 11, mouser: 7, digikey: 6 },
-]
-
-export const savingsTrendData = [
-  { month: "Apr", baseline: 168200, optimized: 168200 },
-  { month: "May", baseline: 172400, optimized: 161800 },
-  { month: "Jun", baseline: 179100, optimized: 158200 },
-  { month: "Jul", baseline: 183600, optimized: 154900 },
-  { month: "Aug", baseline: 186420, optimized: 152310 },
-]
-
-export const kpis = [
-  { label: "Total BOM Value", value: "$152,310", delta: "-18.3%", positive: true },
-  { label: "Lines Needing Action", value: "5", delta: "-2 this week", positive: true },
-  { label: "Avg. Lead Time", value: "14.2 days", delta: "-6.1 days", positive: true },
-  { label: "Export-Control Flags", value: "1 ITAR", delta: "1 EAR99 alt found", positive: true },
+export const agentMessagePool = [
+  {
+    site: "deadstock" as const,
+    message: "Stockholm EMS: SP3232EEY-L 4,500 pcs matched as MFR equivalent for MAX3232ESE+ at $0.48.",
+    status: "matched" as const,
+  },
+  {
+    site: "lcsc" as const,
+    message: "LCSC Direct: Verified 45,000 pcs ABM8-25.000MHZ-B2-T in stock at $0.35/pc.",
+    status: "done" as const,
+  },
+  {
+    site: "deadstock" as const,
+    message: "Stuttgart EMS: Acknowledged RFQ-2026-882 for LAN8720A-CP (3,600 pcs available).",
+    status: "running" as const,
+  },
+  {
+    site: "digikey" as const,
+    message: "DigiKey: Checked dual-use ECCN export rating for 18 BOM lines (EAR99 confirmed).",
+    status: "done" as const,
+  },
 ]

@@ -11,6 +11,7 @@ const siteMeta: Record<AgentLogEntry["site"], { label: string; icon: typeof Sear
   lcsc: { label: "LCSC", icon: Search, className: "bg-indigo-50 text-indigo-600" },
   mouser: { label: "Mouser", icon: ShoppingBag, className: "bg-sky-50 text-sky-600" },
   digikey: { label: "DigiKey", icon: ShoppingBag, className: "bg-emerald-50 text-emerald-600" },
+  deadstock: { label: "EU EMS Excess", icon: Sparkles, className: "bg-emerald-50 text-emerald-600" },
 }
 
 function now() {

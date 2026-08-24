@@ -1,332 +1,372 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Check, Copy, CornerDownLeft, Globe2, Send, ShieldCheck, Sparkles } from "lucide-react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import {
+  ArrowRight,
+  Bot,
+  Building2,
+  CheckCircle2,
+  ChevronRight,
+  Copy,
+  Database,
+  FileCheck,
+  Languages,
+  Loader2,
+  Mail,
+  MessageSquareText,
+  Package,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  User,
+  X,
+} from "lucide-react"
 import { useWorkspace } from "@/lib/workspace-context"
-import { bomLines, quickPrompts, seedChat } from "@/lib/mock-data"
-import { ExportControlBadge } from "@/components/workspace/status-badges"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
-type RichKind =
-  | { type: "text"; content: string }
-  | { type: "diff"; mpn: string }
-  | { type: "email"; mpn: string }
-  | { type: "export"; mpn: string }
-
-interface Message {
+interface StructuredMessage {
   id: string
   role: "user" | "assistant"
-  timestamp: string
-  rich: RichKind
-}
-
-function now() {
-  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-}
-
-function findLine(prompt: string) {
-  const lower = prompt.toLowerCase()
-  const byMpn = bomLines.find((l) => lower.includes(l.mpn.toLowerCase()))
-  if (byMpn) return byMpn
-  if (lower.includes("u5") || lower.includes("tps62130")) return bomLines.find((l) => l.mpn === "TPS62130RGTR")!
-  return bomLines.find((l) => l.alternatives.length > 0) ?? bomLines[0]
-}
-
-function classifyPrompt(prompt: string): RichKind {
-  const lower = prompt.toLowerCase()
-  const line = findLine(prompt)
-  if (lower.includes("email") || lower.includes("inquiry") || lower.includes("draft")) {
-    return { type: "email", mpn: line.mpn }
-  }
-  if (lower.includes("export control") || lower.includes("itar") || lower.includes("ear99")) {
-    return { type: "export", mpn: line.mpn }
-  }
-  if (lower.includes("alternative") || lower.includes("compare") || lower.includes("cheaper")) {
-    return { type: "diff", mpn: line.mpn }
-  }
-  return {
-    type: "text",
-    content:
-      "I've cross-referenced that against live channel data. Everything checks out — let me know if you want me to pull parametric comparisons or draft outreach for any specific line.",
+  text: string
+  time: string
+  intent?: string
+  toolsCalled?: string[]
+  sourcesChecked?: string[]
+  evidencePoints?: string[]
+  recommendedActions?: Array<{ label: string; action: () => void }>
+  emailTemplate?: {
+    lang: "sv" | "en" | "zh"
+    subject: string
+    body: string
   }
 }
 
-const emailCopy: Record<string, { subject: string; body: string }> = {
-  sv: {
-    subject: "Förfrågan om lagerparti — {mpn}",
-    body: "Hej,\n\nVi är intresserade av ert deadstock-parti av {mpn} ({qty} st). Kan ni bekräfta tillgängligt antal, ursprungscertifikat och pris vid denna kvantitet?\n\nVänliga hälsningar,\nChipFlow Sourcing Team",
+const initialMessages: StructuredMessage[] = [
+  {
+    id: "M1",
+    role: "assistant",
+    time: "07:30",
+    text: "ChipFlow Sourcing Copilot initialized. Grounded in European EMS verified excess lots, real-time franchised distributor data, and official manufacturer compliance databases.",
+    intent: "Session Initialization",
+    toolsCalled: ["db.inventoryLots.scan()", "api.distributorPrice.compare()", "compliance.eccn.verify()"],
+    sourcesChecked: [
+      "NordicEMS Gothenburg Lot A29177",
+      "Bavaria Logistics Hub Lot M77812",
+      "DigiKey / Mouser API Feeds",
+      "STMicroelectronics Official Compliance Record",
+    ],
+    evidencePoints: [
+      "15 of 18 BOM lines successfully matched with verified excess stock.",
+      "Total identified project savings: $34,200.00 (avg 34% cost reduction).",
+      "Active Escrow reservation locked: $1,224.00 for TPS62130RGTR in Munich.",
+    ],
+    recommendedActions: [],
   },
-  en: {
-    subject: "Inquiry regarding deadstock lot — {mpn}",
-    body: "Hello,\n\nWe are interested in your deadstock lot of {mpn} (qty {qty}). Could you confirm available quantity, certificate of origin, and pricing at this volume?\n\nBest regards,\nChipFlow Sourcing Team",
-  },
-  zh: {
-    subject: "关于库存件询价 — {mpn}",
-    body: "您好，\n\n我们对您现有的 {mpn}（数量 {qty}）库存件感兴趣。请确认可供数量、原产地证明以及该数量下的价格。\n\n此致\nChipFlow 采购团队",
-  },
-}
-
-function fillTemplate(template: string, mpn: string, qty: number) {
-  return template.replace("{mpn}", mpn).replace("{qty}", qty.toLocaleString())
-}
-
-function DiffCard({ mpn }: { mpn: string }) {
-  const line = bomLines.find((l) => l.mpn === mpn)
-  const alt = line?.alternatives[0]
-  if (!line || !alt) {
-    return <p className="text-sm text-muted-foreground">No parametric alternatives found for {mpn}.</p>
-  }
-  return (
-    <div className="rounded-xl border border-border bg-secondary/40 p-3.5">
-      <div className="mb-2.5 flex items-center justify-between">
-        <p className="text-xs font-medium">
-          {line.mpn} <span className="text-muted-foreground">vs</span> {alt.mpn}
-        </p>
-        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-          {alt.matchScore}% match
-        </span>
-      </div>
-      <div className="overflow-hidden rounded-lg border border-border/70">
-        <table className="w-full text-left text-[11px]">
-          <thead className="bg-card text-muted-foreground">
-            <tr>
-              <th className="px-2.5 py-1.5 font-medium">Parameter</th>
-              <th className="px-2.5 py-1.5 font-medium">Original</th>
-              <th className="px-2.5 py-1.5 font-medium">Alternative</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/70">
-            {alt.diffs.map((d) => (
-              <tr key={d.param} className="bg-card">
-                <td className="px-2.5 py-1.5 text-muted-foreground">{d.param}</td>
-                <td className="px-2.5 py-1.5">{d.original}</td>
-                <td
-                  className={cn(
-                    "px-2.5 py-1.5 font-medium",
-                    d.match === "review" ? "text-amber-600" : "text-foreground",
-                  )}
-                >
-                  {d.alternative}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-2.5 flex items-center justify-between text-[11px] text-muted-foreground">
-        <span>{alt.manufacturer}</span>
-        <span className={cn("font-medium", alt.priceDelta < 0 ? "text-emerald-600" : "text-foreground")}>
-          {alt.priceDelta < 0 ? "-" : "+"}${Math.abs(alt.priceDelta).toFixed(2)}/unit · {alt.leadTimeDays}d lead
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function EmailCard({ mpn }: { mpn: string }) {
-  const line = bomLines.find((l) => l.mpn === mpn)
-  const qty = line?.qty ?? 2400
-  const [copied, setCopied] = useState<string | null>(null)
-
-  const handleCopy = (lang: string, text: string) => {
-    navigator.clipboard?.writeText(text).catch(() => {})
-    setCopied(lang)
-    setTimeout(() => setCopied(null), 1500)
-  }
-
-  return (
-    <div className="rounded-xl border border-border bg-secondary/40 p-3.5">
-      <p className="mb-2.5 text-xs font-medium">Trilingual inquiry email — {mpn}</p>
-      <Tabs defaultValue="en">
-        <TabsList className="h-8 rounded-lg bg-card p-0.5">
-          <TabsTrigger value="sv" className="h-7 rounded-md text-xs">
-            Svenska
-          </TabsTrigger>
-          <TabsTrigger value="en" className="h-7 rounded-md text-xs">
-            English
-          </TabsTrigger>
-          <TabsTrigger value="zh" className="h-7 rounded-md text-xs">
-            中文
-          </TabsTrigger>
-        </TabsList>
-        {(["sv", "en", "zh"] as const).map((lang) => {
-          const subject = fillTemplate(emailCopy[lang].subject, mpn, qty)
-          const body = fillTemplate(emailCopy[lang].body, mpn, qty)
-          const full = `Subject: ${subject}\n\n${body}`
-          return (
-            <TabsContent key={lang} value={lang} className="mt-2.5">
-              <div className="rounded-lg border border-border/70 bg-card p-3">
-                <p className="text-[11px] font-medium text-muted-foreground">Subject</p>
-                <p className="mt-0.5 text-xs">{subject}</p>
-                <p className="mt-2.5 text-[11px] font-medium text-muted-foreground">Body</p>
-                <p className="mt-0.5 whitespace-pre-line text-xs leading-relaxed">{body}</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 h-7 gap-1.5 rounded-md bg-transparent text-[11px]"
-                onClick={() => handleCopy(lang, full)}
-              >
-                {copied === lang ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                {copied === lang ? "Copied" : "Copy email"}
-              </Button>
-            </TabsContent>
-          )
-        })}
-      </Tabs>
-    </div>
-  )
-}
-
-function ExportCard({ mpn }: { mpn: string }) {
-  const line = bomLines.find((l) => l.mpn === mpn)
-  if (!line) return null
-  const alt = line.alternatives[0]
-  return (
-    <div className="rounded-xl border border-border bg-secondary/40 p-3.5">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium">{mpn}</p>
-        <ExportControlBadge control={line.exportControl} />
-      </div>
-      {line.exportControl === "ITAR" ? (
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          This part is subject to ITAR licensing for cross-border shipment. {alt ? (
-            <>
-              A parametric-equivalent alternative, <span className="font-medium text-foreground">{alt.mpn}</span>,
-              is classified <span className="font-medium text-emerald-700">EAR99</span> and removes the license
-              requirement.
-            </>
-          ) : (
-            "No EAR99 alternative identified yet."
-          )}
-        </p>
-      ) : (
-        <p className="mt-2 flex items-center gap-1.5 text-xs leading-relaxed text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-          Classified {line.exportControl === "None" ? "with no export restriction" : line.exportControl}. Clear for
-          cross-border shipment.
-        </p>
-      )}
-    </div>
-  )
-}
-
-function RichContent({ rich }: { rich: RichKind }) {
-  if (rich.type === "text") return <p className="text-sm leading-relaxed">{rich.content}</p>
-  if (rich.type === "diff") return <DiffCard mpn={rich.mpn} />
-  if (rich.type === "email") return <EmailCard mpn={rich.mpn} />
-  return <ExportCard mpn={rich.mpn} />
-}
+]
 
 export function CopilotDrawer() {
-  const { copilotOpen, setCopilotOpen, copilotSeedPrompt, clearCopilotSeed } = useWorkspace()
-  const [messages, setMessages] = useState<Message[]>([
-    { id: "seed", role: "assistant", timestamp: seedChat[0].timestamp, rich: { type: "text", content: seedChat[0].content } },
-  ])
-  const [input, setInput] = useState("")
-  const [thinking, setThinking] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const {
+    copilotOpen,
+    setCopilotOpen,
+    copilotSeedPrompt,
+    clearCopilotSeed,
+    sendRfq,
+    reserveLot,
+    opportunities,
+    inventoryLots,
+  } = useWorkspace()
 
-  const sendPrompt = (prompt: string) => {
-    if (!prompt.trim()) return
-    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", timestamp: now(), rich: { type: "text", content: prompt } }
-    setMessages((prev) => [...prev, userMsg])
-    setInput("")
-    setThinking(true)
-    setTimeout(() => {
-      const rich = classifyPrompt(prompt)
-      setMessages((prev) => [...prev, { id: `a-${Date.now()}`, role: "assistant", timestamp: now(), rich }])
-      setThinking(false)
-    }, 900)
-  }
+  const [messages, setMessages] = useState<StructuredMessage[]>(initialMessages)
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (copilotSeedPrompt) {
-      sendPrompt(copilotSeedPrompt)
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  useEffect(() => {
+    if (copilotSeedPrompt && copilotOpen) {
+      handleUserQuery(copilotSeedPrompt)
       clearCopilotSeed()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [copilotSeedPrompt])
+  }, [copilotSeedPrompt, copilotOpen])
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
-  }, [messages, thinking])
+  const handleUserQuery = (queryText: string) => {
+    const userMsg: StructuredMessage = {
+      id: `U-${Date.now()}`,
+      role: "user",
+      text: queryText,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    }
+
+    setMessages((prev) => [...prev, userMsg])
+    setInput("")
+    setLoading(true)
+
+    // Simulate structured tool execution and evidence generation
+    setTimeout(() => {
+      let assistantMsg: StructuredMessage
+
+      if (queryText.toLowerCase().includes("stm32") || queryText.includes("U1")) {
+        const opp = opportunities.find((o) => o.demandMpn.includes("STM32"))
+        assistantMsg = {
+          id: `A-${Date.now()}`,
+          role: "assistant",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          text: "Here is the verified sourcing audit and evidence for STM32F103C8T6:",
+          intent: "Part Sourcing & Excess Verification Audit",
+          toolsCalled: [
+            "inventory_lot.lookup('LOT-SE-9912')",
+            "distributor_median.calculate('STM32F103C8T6')",
+            "traceability.audit_coc('NordicEMS')",
+          ],
+          sourcesChecked: [
+            "NordicEMS Gothenburg Hub (Lot A29177)",
+            "STMicroelectronics Product Lifecycle Notice",
+            "Mouser ($2.41) & DigiKey ($2.38) spot price feeds",
+          ],
+          evidencePoints: [
+            "Exact MPN Match (LQFP-48, 64KB Flash, 100% pin parity).",
+            "Quantity Sufficient: Demand 2,400 pcs vs Available 8,400 pcs in Sweden.",
+            "Offered Unit Price: $1.26 vs Market Median $2.39 (34% savings below target).",
+            "Full Factory CoC & Original Invoices verified in Trust Vault.",
+            "Date Code: 2224 (< 36 months, factory sealed dry-pack).",
+            "Transit time: 3-4 business days via DHL Express EU Hub.",
+          ],
+          recommendedActions: [
+            {
+              label: "Send RFQ to Gothenburg EMS ($1.26/pc)",
+              action: () => {
+                if (opp) sendRfq(opp.id)
+              },
+            },
+            {
+              label: "Lock Lot in Escrow ($1,584 Savings)",
+              action: () => {
+                if (opp) reserveLot(opp.id, opp.matchedLot.id)
+              },
+            },
+          ],
+        }
+      } else if (queryText.toLowerCase().includes("email") || queryText.includes("邮件") || queryText.includes("瑞典")) {
+        assistantMsg = {
+          id: `A-${Date.now()}`,
+          role: "assistant",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          text: "Generated verified trilingual supplier outreach draft for Swedish EMS procurement:",
+          intent: "Supplier Negotiation & RFQ Synthesis",
+          toolsCalled: ["translator.sourcing_spec.generate('sv')", "rfq.format_terms()"],
+          sourcesChecked: ["Nordic Procurement Standard Protocol", "EAR99 Compliance Terms"],
+          emailTemplate: {
+            lang: "sv",
+            subject: "Förfrågan om överskottslager (RFQ) — STM32F103C8T6 (Lot A29177)",
+            body: `Hej NordicEMS Sourcing Team,\n\nVi önskar reservera 2 400 st STM32F103C8T6 från ert verifierade parti LOT-2024-A29177 till målpriset $1.26/st.\n\nVänligen bekräfta fabriksförseglat skick (CoC) och beräknad leveranstid till vårt europeiska logistiknav.\n\nVänliga hälsningar,\nEliot / ChipFlow Global Procurement`,
+          },
+          recommendedActions: [
+            {
+              label: "Dispatch Email via Connected Swedish Desk",
+              action: () => alert("Email dispatched to Swedish EMS desk."),
+            },
+          ],
+        }
+      } else {
+        assistantMsg = {
+          id: `A-${Date.now()}`,
+          role: "assistant",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          text: `Analysis complete for: "${queryText}". Checked database across ${inventoryLots.length} verified EMS lots and live distributor API connections.`,
+          intent: "General Sourcing Query",
+          toolsCalled: ["crossborder_matcher.query()", "risk_engine.score()"],
+          sourcesChecked: ["Nordic EMS Network", "DACH Automotive EMS Hub", "Texas Instruments Export DB"],
+          evidencePoints: [
+            "All pricing data cross-checked against DigiKey, Mouser, and LCSC.",
+            "Excess lots require minimum Trust Level 2 for automatic recommendation.",
+            "Export control compliance flagged automatically on dual-use ECCNs.",
+          ],
+          recommendedActions: [
+            {
+              label: "View All Active Opportunities",
+              action: () => {},
+            },
+          ],
+        }
+      }
+
+      setMessages((prev) => [...prev, assistantMsg])
+      setLoading(false)
+    }, 700)
+  }
 
   return (
     <Sheet open={copilotOpen} onOpenChange={setCopilotOpen}>
-      <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-md">
-        <SheetHeader className="border-b border-border px-5 py-4">
-          <SheetTitle className="flex items-center gap-2 text-sm">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-3.5 w-3.5" />
-            </span>
-            BOM Copilot
-          </SheetTitle>
+      <SheetContent side="right" className="w-full gap-0 overflow-hidden p-0 sm:max-w-xl flex flex-col">
+        {/* Header */}
+        <SheetHeader className="border-b border-border px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <Bot className="h-4 w-4" />
+              </div>
+              <div>
+                <SheetTitle className="text-sm font-bold tracking-tight">ChipFlow Sourcing Copilot</SheetTitle>
+                <p className="text-[11px] text-muted-foreground">
+                  Grounded Procurement Agent · Tool Calling & Evidence Based
+                </p>
+              </div>
+            </div>
+          </div>
         </SheetHeader>
 
-        <div ref={scrollRef} className="h-[calc(100vh-186px)] overflow-y-auto">
-          <div className="flex flex-col gap-4 px-5 py-4">
-            {messages.map((m) => (
-              <div key={m.id} className={cn("flex flex-col gap-1", m.role === "user" && "items-end")}>
-                <div
-                  className={cn(
-                    "max-w-[90%] rounded-2xl px-3.5 py-2.5",
-                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border",
-                  )}
-                >
-                  <RichContent rich={m.rich} />
+        {/* Message Thread */}
+        <div className="flex-1 space-y-4 overflow-y-auto p-6 text-xs">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={cn(
+                "flex flex-col space-y-2 rounded-2xl p-4 leading-relaxed",
+                msg.role === "user"
+                  ? "ml-8 bg-primary text-primary-foreground"
+                  : "mr-4 border border-border bg-card shadow-sm text-foreground"
+              )}
+            >
+              <div className="flex items-center justify-between text-[10px] opacity-70">
+                <span className="font-bold">{msg.role === "user" ? "Buyer (You)" : "ChipFlow Copilot"}</span>
+                <span>{msg.time}</span>
+              </div>
+
+              <p className="text-xs font-medium">{msg.text}</p>
+
+              {/* Tools & Sources metadata */}
+              {msg.toolsCalled && msg.toolsCalled.length > 0 && (
+                <div className="rounded-xl border border-border/80 bg-secondary/40 p-2.5 space-y-1 text-[11px]">
+                  <div className="flex items-center gap-1 font-semibold text-muted-foreground">
+                    <Database className="h-3 w-3 text-primary" />
+                    <span>Tools Executed:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {msg.toolsCalled.map((t, i) => (
+                      <span key={i} className="rounded bg-card px-1.5 py-0.5 font-mono text-[10px] border">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <span className="px-1 text-[10px] text-muted-foreground">{m.timestamp}</span>
-              </div>
-            ))}
-            {thinking && (
-              <div className="flex items-center gap-1.5 rounded-2xl border border-border bg-card px-3.5 py-2.5 w-fit">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.2s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0.2s]" />
-              </div>
-            )}
-          </div>
+              )}
+
+              {/* Evidence Points */}
+              {msg.evidencePoints && msg.evidencePoints.length > 0 && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/20 text-emerald-950 dark:text-emerald-200">
+                  <div className="flex items-center gap-1 font-semibold text-emerald-800 dark:text-emerald-300">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Verified Sourcing Evidence:</span>
+                  </div>
+                  <ul className="mt-1.5 space-y-1 text-[11px]">
+                    {msg.evidencePoints.map((pt, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                        <span>{pt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Email Template Card */}
+              {msg.emailTemplate && (
+                <div className="rounded-xl border border-border bg-secondary/50 p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-semibold">
+                    <span className="flex items-center gap-1">
+                      <Languages className="h-3 w-3 text-primary" />
+                      Svenska (Swedish) Outreach Draft
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px]"
+                      onClick={() => navigator.clipboard.writeText(msg.emailTemplate?.body || "")}
+                    >
+                      <Copy className="mr-1 h-2.5 w-2.5" /> Copy
+                    </Button>
+                  </div>
+                  <p className="font-semibold text-foreground text-[11px]">Subject: {msg.emailTemplate.subject}</p>
+                  <pre className="whitespace-pre-wrap font-sans text-[11px] text-muted-foreground leading-normal">
+                    {msg.emailTemplate.body}
+                  </pre>
+                </div>
+              )}
+
+              {/* Recommended Actions Buttons */}
+              {msg.recommendedActions && msg.recommendedActions.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-border/60">
+                  {msg.recommendedActions.map((action, i) => (
+                    <Button
+                      key={i}
+                      size="sm"
+                      className="h-7 gap-1 rounded-lg text-[11px] bg-primary text-primary-foreground"
+                      onClick={action.action}
+                    >
+                      <ArrowRight className="h-3 w-3" />
+                      {action.label}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span>Querying verified EMS inventory and running compliance lookup...</span>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-border px-4 py-3">
-          <div className="mb-2.5 flex flex-wrap gap-1.5">
-            {quickPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                onClick={() => sendPrompt(prompt)}
-                className="rounded-full border border-border bg-secondary/60 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-end gap-2">
-            <Textarea
+        {/* Query Input */}
+        <div className="border-t border-border p-4 bg-card">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (input.trim()) handleUserQuery(input.trim())
+            }}
+            className="flex items-center gap-2"
+          >
+            <Input
+              placeholder="Ask about part audit, Swedish EMS lot, CoC, or RFQ..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault()
-                  sendPrompt(input)
-                }
-              }}
-              placeholder="Ask about a part, alternative, or export status..."
-              className="min-h-[40px] flex-1 resize-none rounded-xl text-sm"
-              rows={1}
+              className="h-10 text-xs rounded-xl"
             />
-            <Button size="icon" className="h-10 w-10 shrink-0 rounded-xl" onClick={() => sendPrompt(input)}>
-              <Send className="h-4 w-4" />
+            <Button size="sm" type="submit" disabled={!input.trim() || loading} className="rounded-xl h-10 px-4">
+              <Send className="h-3.5 w-3.5" />
             </Button>
+          </form>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button
+              onClick={() => handleUserQuery("Why is STM32F103C8T6 matched with Gothenburg EMS lot?")}
+              className="rounded-md border border-border bg-secondary/40 px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Why STM32 match?
+            </button>
+            <button
+              onClick={() => handleUserQuery("Generate Swedish supplier RFQ email for Lot A29177")}
+              className="rounded-md border border-border bg-secondary/40 px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Swedish RFQ Email
+            </button>
+            <button
+              onClick={() => handleUserQuery("Check EAR99 and 5A992 compliance conflicts for this BOM")}
+              className="rounded-md border border-border bg-secondary/40 px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Compliance Audit
+            </button>
           </div>
-          <p className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-            <CornerDownLeft className="h-2.5 w-2.5" />
-            Enter to send · Shift+Enter for a new line
-          </p>
         </div>
       </SheetContent>
     </Sheet>
