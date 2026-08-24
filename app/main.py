@@ -1,7 +1,7 @@
 """
 ChipFlow FastAPI Main Application.
 Provides REST and Server-Sent Events (SSE) APIs for BOM parsing, Ego-style price checking,
-Vector alternative recommendation, and European cross-border sourcing.
+Vector alternative recommendation, European cross-border sourcing, and AI Chat.
 Compatible with local execution and Vercel Serverless runtime.
 """
 
@@ -21,6 +21,7 @@ from app.services.pricing_agent import stream_price_lookup, get_cached_price, LI
 from app.services.vector_matcher import find_vector_substitutes
 from app.services.crossborder_sourcing import generate_trilingual_inquiry_email, check_european_deadstock
 from app.services.compliance_checker import check_export_compliance
+from app.services.bom_ai_chat import answer_bom_query
 
 app = FastAPI(title=settings.APP_NAME, version=settings.VERSION)
 
@@ -148,6 +149,13 @@ async def create_email(payload: dict):
     
     result = generate_trilingual_inquiry_email(mpn, target_qty, company_name)
     return {"success": True, "data": result}
+
+@app.post("/api/chat-bom")
+async def chat_bom(payload: dict):
+    query = payload.get("query", "")
+    items = payload.get("items", [])
+    reply = answer_bom_query(query, items)
+    return {"success": True, "reply": reply}
 
 @app.post("/api/export-quote-excel")
 async def export_quote_excel(payload: dict):
